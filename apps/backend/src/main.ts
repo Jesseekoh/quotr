@@ -8,6 +8,8 @@ async function bootstrap() {
     origin: process.env.ORIGIN,
     credentials: true,
   });
+
+  app.useLogger(app.get(Logger));
   await app.listen(process.env.PORT ?? 3000);
 }
 await bootstrap();
