@@ -3,6 +3,7 @@ import { CreateProductDto } from './dto/create-product.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+import { Prisma, ProductCategory } from '../generated/prisma/client.js';
 
 @Injectable()
 export class ProductsService {
@@ -30,8 +31,27 @@ export class ProductsService {
     }
   }
 
-  async findAll() {
-    return this.prisma.product.findMany({ where: { isActive: true } });
+  async findAll(filters?: { category?: string; search?: string }) {
+    const where: Prisma.ProductWhereInput = { isActive: true };
+
+    if (
+      filters?.category &&
+      Object.values(ProductCategory).includes(
+        filters.category as ProductCategory,
+      )
+    ) {
+      where.category = filters.category as ProductCategory;
+    }
+
+    if (filters?.search) {
+      where.OR = [
+        { name: { contains: filters.search, mode: 'insensitive' } },
+        { brand: { contains: filters.search, mode: 'insensitive' } },
+        { specification: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
+
+    return this.prisma.product.findMany({ where, orderBy: { name: 'asc' } });
   }
 
   async update(id: string, dto: UpdateProductDto) {

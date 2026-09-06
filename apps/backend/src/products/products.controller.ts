@@ -6,6 +6,7 @@ import {
   Patch,
   Delete,
   Param,
+  Query,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -32,8 +33,11 @@ export class ProductsController {
 
   @AllowAnonymous()
   @Get()
-  async findAll() {
-    return this.productService.findAll();
+  async findAll(
+    @Query('category') category?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.productService.findAll({ category, search });
   }
 
   @AllowAnonymous()
