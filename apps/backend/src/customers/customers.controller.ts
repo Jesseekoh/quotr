@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Body,
+  Query,
   Patch,
   Param,
   Delete,
@@ -16,13 +17,13 @@ export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
   @Post()
-  create(@Body() createCustomerDto: CreateCustomerDto) {
-    return this.customersService.create(createCustomerDto);
+  create(@Body() dto: CreateCustomerDto) {
+    return this.customersService.create(dto);
   }
 
   @Get()
-  findAll() {
-    return this.customersService.findAll();
+  findAll(@Query('search') search?: string) {
+    return this.customersService.findAll(search);
   }
 
   @Get(':id')
@@ -31,11 +32,8 @@ export class CustomersController {
   }
 
   @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateCustomerDto: UpdateCustomerDto,
-  ) {
-    return this.customersService.update(id, updateCustomerDto);
+  update(@Param('id') id: string, @Body() dto: UpdateCustomerDto) {
+    return this.customersService.update(id, dto);
   }
 
   @Delete(':id')
