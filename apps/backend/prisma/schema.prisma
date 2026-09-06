@@ -76,3 +76,160 @@ model Verification {
   @@index([identifier])
   @@map("verification")
 }
+
+enum ProductCategory {
+  SOLAR_PANEL
+  INVERTER
+  CHARGE_CONTROLLER
+  BATTERY
+  RACK_MOUNTING
+  CABLE
+  CABINET
+  ACCESSORY
+  OTHER
+}
+
+enum PriceLabel {
+  COST_PRICE
+  DISCOUNT_PRICE
+  RESALE_PRICE
+  SPECIAL_PRICE
+  ENDUSER_PRICE
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+}
+
+model Product {
+  id             String          @id @default(cuid())
+  name           String
+  brand          String
+  category       ProductCategory
+  // Free-text summary of the product, e.g. "10KW 48V Stackable Hybrid
+  // Inverter with Inbuilt 2 x 100A 500V MPPT Solar Charge Controller"
+  specification  String
+  // Optional structured technical specs, e.g. { "capacityKWh": 16.07,
+  // "voltage": "48VDC", "cycles": 8000, "dod": "80%", "warrantyYears": 10 }
+  technicalSpecs Json?
+  unit           String?         @default("pcs")
+
+  costPrice     Decimal @db.Decimal(14, 2)
+  discountPrice Decimal @db.Decimal(14, 2)
+  resalePrice   Decimal @db.Decimal(14, 2)
+  specialPrice  Decimal @db.Decimal(14, 2)
+  enduserPrice  Decimal @db.Decimal(14, 2)
+
+  quoteItems QuoteItem[]
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([brand])
+}
+
+model Customer {
+  id      String  @id @default(cuid())
+  name    String
+  phone   String?
+  email   String?
+  address String?
+
+  quotes Quote[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Quote {
+  id          String @id @default(cuid())
+  quoteNumber String @unique
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  // Determines which product price tier is used for items added from the
+  // catalog (e.g. "special price" -> Product.specialPrice).
+  label  PriceLabel  @default(ENDUSER_PRICE)
+  status QuoteStatus @default(DRAFT)
+
+  // Simple load profile: just the total value (in VA/W, or whatever unit the
+  // business uses) of all appliances/load the customer wants to power.
+  loadProfileTotal Decimal? @db.Decimal(14, 2)
+  loadProfileNotes String?
+
+  paymentTerms String?
+  notes        String?
+
+  // Items that are NOT tied to a specific option apply to every option
+  // (e.g. inverter, PV modules, installation & labor in the sample quote).
+  items   QuoteItem[]
+  // Alternative packages the customer can choose between (e.g. "Battery
+  // Option A/B/C/D"). Each option only adds its own items on top of the
+  // common items above.
+  options QuoteOption[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model QuoteOption {
+  id String @id @default(cuid())
+
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  name        String // e.g. "Battery Option A - 16.07KWh Lithium (10yr)"
+  description String?
+  isDefault   Boolean @default(false)
+  sortOrder   Int     @default(0)
+
+  items QuoteItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model QuoteItem {
+  id String @id @default(cuid())
+
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  // Null means this item is common to the whole quote. Set means it only
+  // belongs to that particular option/package.
+  quoteOptionId String?
+  quoteOption   QuoteOption? @relation(fields: [quoteOptionId], references: [id], onDelete: Cascade)
+
+  // Null means the item was typed in freehand rather than picked from the
+  // product catalog.
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+
+  description   String
+  brand         String?
+  specification String?
+  category      ProductCategory?
+
+  quantity Int     @default(1)
+  unit     String? @default("pcs")
+
+  // Snapshot of the price used at the time the item was added/recalculated,
+  // so the quote stays accurate even if the product's prices change later.
+  unitPrice  Decimal @db.Decimal(14, 2)
+  totalPrice Decimal @db.Decimal(14, 2)
+
+  sortOrder Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([quoteId])
+  @@index([quoteOptionId])
+}
