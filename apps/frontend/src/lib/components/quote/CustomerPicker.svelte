@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { searchCustomers } from '$lib/api/customers';
 	import type { Customer } from '$lib/api/types';
+	import Button from '../ui/button/button.svelte';
+	import Input from '../ui/input/input.svelte';
+	import Label from '../ui/label/label.svelte';
+	import Textarea from '../ui/textarea/textarea.svelte';
 
 	let {
 		mode = $bindable<'existing' | 'new'>('existing'),
@@ -58,36 +62,34 @@
 
 <div class="picker">
 	<div class="tabs" role="tablist">
-		<button
+		<Button
 			type="button"
 			role="tab"
-			class="tab"
-			class:active={mode === 'existing'}
+			class="tab {mode === 'existing' ? 'active' : ''}"
 			onclick={() => switchMode('existing')}
 		>
 			Existing customer
-		</button>
-		<button
+		</Button>
+		<Button
 			type="button"
 			role="tab"
-			class="tab"
-			class:active={mode === 'new'}
+			class="tab {mode === 'new' ? 'active' : ''}"
 			onclick={() => switchMode('new')}
 		>
 			New customer
-		</button>
+		</Button>
 	</div>
 
 	{#if mode === 'existing'}
 		<div class="existing">
-			<label class="field">
+			<Label class="field">
 				<span>Search customers</span>
-				<input
+				<Input
 					bind:value={search}
 					oninput={handleSearchInput}
 					placeholder="Search by name, phone, or email…"
 				/>
-			</label>
+			</Label>
 
 			{#if searching}
 				<p class="hint">Searching…</p>
@@ -95,12 +97,12 @@
 				<ul class="results">
 					{#each results as customer (customer.id)}
 						<li>
-							<button type="button" onclick={() => selectCustomer(customer)}>
+							<Button type="button" onclick={() => selectCustomer(customer)}>
 								<span class="name">{customer.name}</span>
 								{#if customer.phone || customer.email}
 									<span class="muted">{customer.phone ?? customer.email}</span>
 								{/if}
-							</button>
+							</Button>
 						</li>
 					{/each}
 				</ul>
@@ -116,24 +118,24 @@
 		</div>
 	{:else}
 		<div class="new-fields">
-			<label class="field">
+			<Label class="field">
 				<span>Name</span>
-				<input bind:value={newCustomer.name} required placeholder="Customer's full name" />
-			</label>
+				<Input bind:value={newCustomer.name} required placeholder="Customer's full name" />
+			</Label>
 			<div class="row">
-				<label class="field">
+				<Label class="field">
 					<span>Phone</span>
-					<input bind:value={newCustomer.phone} placeholder="080…" />
-				</label>
-				<label class="field">
+					<Input bind:value={newCustomer.phone} placeholder="080…" />
+				</Label>
+				<Label class="field">
 					<span>Email</span>
 					<input type="email" bind:value={newCustomer.email} />
-				</label>
+				</Label>
 			</div>
-			<label class="field">
+			<Label class="field">
 				<span>Address</span>
-				<textarea bind:value={newCustomer.address} rows="2"></textarea>
-			</label>
+				<Textarea bind:value={newCustomer.address} rows={2}></Textarea>
+			</Label>
 		</div>
 	{/if}
 </div>
