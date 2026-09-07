@@ -1,14 +1,15 @@
 <script lang="ts">
-	import Button from '../ui/button/button.svelte';
-	import Label from '../ui/label/label.svelte';
-	import Textarea from '../ui/textarea/textarea.svelte';
-	import Modal from './Modal.svelte';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
+	import { Textarea } from '$lib/components/ui/textarea/index.js';
 
 	let {
-		onClose,
+		open = $bindable(false),
 		onSubmit
 	}: {
-		onClose: () => void;
+		open: boolean;
 		onSubmit: (payload: { name: string; description?: string }) => void;
 	} = $props();
 
@@ -19,59 +20,43 @@
 		e.preventDefault();
 		if (!name.trim()) return;
 		onSubmit({ name: name.trim(), description: description.trim() || undefined });
+		name = '';
+		description = '';
+		open = false;
 	}
 </script>
 
-<Modal title="Add option" {onClose}>
-	<form onsubmit={submit}>
-		<Label class="field">
-			<span>Name</span>
-			<input bind:value={name} placeholder="e.g. Battery Option E" required />
-		</Label>
+<Dialog.Root bind:open>
+	<Dialog.Content class="sm:max-w-md">
+		<Dialog.Header>
+			<Dialog.Title>Add option</Dialog.Title>
+			<Dialog.Description>Create a new option group for this quote.</Dialog.Description>
+		</Dialog.Header>
 
-		<Label class="field">
-			<span>Description (optional)</span>
-			<Textarea bind:value={description} rows={2} placeholder="e.g. 32.14KWh - 48VDC"></Textarea>
-		</Label>
+		<form class="flex flex-col gap-4" onsubmit={submit}>
+			<div class="flex flex-col gap-1.5">
+				<Label for="opt-name">Name</Label>
+				<Input id="opt-name" bind:value={name} placeholder="e.g. Battery Option E" required />
+			</div>
 
-		<div class="actions">
-			<Button type="button" class="btn-secondary" onclick={onClose}>Cancel</Button>
-			<button type="submit" class="btn-primary">Add option</button>
-		</div>
-	</form>
-</Modal>
+			<div class="flex flex-col gap-1.5">
+				<Label for="opt-desc">Description (optional)</Label>
+				<Textarea
+					id="opt-desc"
+					bind:value={description}
+					rows={2}
+					placeholder="e.g. 32.14KWh - 48VDC"
+				/>
+			</div>
 
-<style>
-	form {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-3);
-	}
-
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-1);
-		font-size: var(--text-sm);
-	}
-
-	input,
-	textarea {
-		padding: var(--space-2) var(--space-3);
-		border: 1px solid var(--color-border-strong);
-		border-radius: var(--radius-sm);
-		font-size: var(--text-sm);
-		font-family: inherit;
-	}
-
-	textarea {
-		resize: vertical;
-	}
-
-	.actions {
-		display: flex;
-		justify-content: flex-end;
-		gap: var(--space-2);
-		margin-top: var(--space-2);
-	}
-</style>
+			<Dialog.Footer>
+				<Dialog.Close>
+					{#snippet child({ props })}
+						<Button {...props} variant="secondary">Cancel</Button>
+					{/snippet}
+				</Dialog.Close>
+				<Button type="submit">Add option</Button>
+			</Dialog.Footer>
+		</form>
+	</Dialog.Content>
+</Dialog.Root>

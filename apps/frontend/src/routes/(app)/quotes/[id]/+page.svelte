@@ -149,14 +149,6 @@
 	<TotalsSummary options={quote.options} summary={quote.summary} />
 </div>
 
-{#if showAddItemModal}
-	<AddItemModal
-		label={quote.label}
-		onClose={() => (showAddItemModal = false)}
-		onSubmit={handleAddItem}
-	/>
-{/if}
+<AddItemModal bind:open={showAddItemModal} label={quote.label} onSubmit={handleAddItem} />
 
-{#if showAddOptionModal}
-	<AddOptionModal onClose={() => (showAddOptionModal = false)} onSubmit={handleAddOption} />
-{/if}
+<AddOptionModal bind:open={showAddOptionModal} onSubmit={handleAddOption} />
