@@ -19,9 +19,9 @@
 	let { data } = $props();
 
 	// --- Filter state, seeded from the URL ---
-	// eslint-disable-next-line svelte/state_referenced_locally -- intentionally capturing the initial value
+	// svelte-ignore state_referenced_locally
 	let category = $state(data.category);
-	// eslint-disable-next-line svelte/state_referenced_locally
+	// svelte-ignore state_referenced_locally
 	let search = $state(data.search);
 
 	const CATEGORIES = [
@@ -136,7 +136,7 @@
 				<div class="flex flex-col gap-1.5">
 					<Label for="category-filter" class="text-sm font-medium">Category</Label>
 					<Select.Root type="single" bind:value={() => category, onCategoryChange}>
-						<Select.Trigger class="w-[200px]" id="category-filter">
+						<Select.Trigger class="w-50" id="category-filter">
 							{categoryLabel}
 						</Select.Trigger>
 						<Select.Content>
