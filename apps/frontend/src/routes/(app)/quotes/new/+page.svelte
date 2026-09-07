@@ -8,8 +8,11 @@
 	import type { PriceLabel } from '$lib/api/types';
 	import { resolve } from '$app/paths';
 	import { Button } from '$lib/components/ui/button/index';
+	import * as Card from '$lib/components/ui/card/index';
 	import { Input } from '$lib/components/ui/input/index';
 	import Label from '$lib/components/ui/label/label.svelte';
+	import * as Select from '$lib/components/ui/select/index';
+
 	let mode = $state<'existing' | 'new'>('existing');
 	let customerId = $state<string | null>(null);
 	let newCustomer = $state({ name: '', phone: '', email: '', address: '' });
@@ -57,7 +60,6 @@
 				paymentTerms: paymentTerms.trim() || undefined
 			});
 
-			// Land straight in the builder - items/options are added there.
 			await goto(resolve(`/quotes/${quote.id}`));
 		} catch (err) {
 			errorMessage =
@@ -72,128 +74,88 @@
 	<title>New quote</title>
 </svelte:head>
 
-<div class="page">
-	<h1>New quote</h1>
+<div class="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6 lg:px-6">
+	<div>
+		<h1 class="text-2xl font-semibold tracking-tight">New quote</h1>
+		<p class="text-sm text-muted-foreground">Create a quote for a customer.</p>
+	</div>
 
 	{#if errorMessage}
-		<p class="error-banner">{errorMessage}</p>
+		<p
+			class="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+		>
+			{errorMessage}
+		</p>
 	{/if}
 
-	<form onsubmit={submit}>
-		<section class="card">
-			<h2>Customer</h2>
-			<CustomerPicker bind:mode bind:customerId bind:newCustomer />
-		</section>
+	<form class="flex flex-col gap-6" onsubmit={submit}>
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>Customer</Card.Title>
+				<Card.Description>Choose an existing customer or add a new one.</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				<CustomerPicker bind:mode bind:customerId bind:newCustomer />
+			</Card.Content>
+		</Card.Root>
 
-		<section class="card">
-			<h2>Quote details</h2>
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>Quote details</Card.Title>
+				<Card.Description>Set the pricing and payment details for this quote.</Card.Description>
+			</Card.Header>
+			<Card.Content class="flex flex-col gap-5">
+				<div class="flex flex-col gap-2">
+					<Label for="price-label">Price label</Label>
+					<Select.Root
+						type="single"
+						bind:value={() => label, (value) => (label = value as PriceLabel)}
+					>
+						<Select.Trigger id="price-label" class="w-full">
+							{PRICE_LABEL_OPTIONS.find((option) => option.value === label)?.text}
+						</Select.Trigger>
+						<Select.Content>
+							{#each PRICE_LABEL_OPTIONS as opt (opt.value)}
+								<Select.Item value={opt.value}>{opt.text}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+					<p class="text-xs text-muted-foreground">
+						Decides which price tier catalog items use on this quote.
+					</p>
+				</div>
 
-			<label class="field">
-				<span>Price label</span>
-				<select bind:value={label}>
-					{#each PRICE_LABEL_OPTIONS as opt (opt.value)}
-						<option value={opt.value}>{opt.text}</option>
-					{/each}
-				</select>
-				<span class="hint">Decides which price tier catalog items use on this quote.</span>
-			</label>
+				<div class="grid gap-5 sm:grid-cols-2">
+					<Label class="flex flex-col gap-2">
+						<span>Total load (optional)</span>
+						<Input
+							type="number"
+							min="0"
+							step="any"
+							bind:value={loadProfileTotal}
+							placeholder="e.g. 5580"
+						/>
+					</Label>
+					<Label class="flex flex-col gap-2">
+						<span>Load profile notes (optional)</span>
+						<Input bind:value={loadProfileNotes} placeholder="e.g. Fridge, TVs, lights, sockets" />
+					</Label>
+				</div>
 
-			<div class="row">
-				<Label class="field">
-					<span>Total load (optional)</span>
+				<Label class="flex flex-col gap-2">
+					<span>Payment terms (optional)</span>
 					<Input
-						type="number"
-						min="0"
-						step="any"
-						bind:value={loadProfileTotal}
-						placeholder="e.g. 5580"
+						bind:value={paymentTerms}
+						placeholder="e.g. 80% prepayment, balance on completion"
 					/>
 				</Label>
-				<Label class="field grow">
-					<span>Load profile notes (optional)</span>
-					<Input bind:value={loadProfileNotes} placeholder="e.g. Fridge, TVs, lights, sockets" />
-				</Label>
-			</div>
+			</Card.Content>
+		</Card.Root>
 
-			<Label class="field">
-				<span>Payment terms (optional)</span>
-				<Input bind:value={paymentTerms} placeholder="e.g. 80% prepayment, balance on completion" />
-			</Label>
-		</section>
-
-		<div class="actions">
-			<Button type="submit" class="btn-primary" disabled={submitting}>
+		<div class="flex justify-end">
+			<Button type="submit" disabled={submitting}>
 				{submitting ? 'Creating…' : 'Create quote'}
 			</Button>
 		</div>
 	</form>
 </div>
-
-<style>
-	.page {
-		max-width: 640px;
-		margin: 0 auto;
-		padding: var(--space-6) var(--space-4);
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-4);
-	}
-
-	h1 {
-		font-size: var(--text-xl);
-		font-weight: 600;
-		margin: 0;
-	}
-
-	form {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-4);
-	}
-
-	.card h2 {
-		font-size: var(--text-base);
-		font-weight: 600;
-		margin: 0 0 var(--space-3);
-	}
-
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-1);
-		font-size: var(--text-sm);
-		margin-bottom: var(--space-3);
-	}
-
-	.field:last-child {
-		margin-bottom: 0;
-	}
-
-	.field.grow {
-		flex: 1;
-	}
-
-	.row {
-		display: flex;
-		gap: var(--space-3);
-	}
-
-	select,
-	input {
-		padding: var(--space-2) var(--space-3);
-		border: 1px solid var(--color-border-strong);
-		border-radius: var(--radius-sm);
-		font-size: var(--text-sm);
-		font-family: inherit;
-	}
-
-	.hint {
-		color: var(--color-text-muted);
-		font-size: var(--text-xs);
-	}
-
-	.actions {
-		display: flex;
-		justify-content: flex-end;
-	}
-</style>
