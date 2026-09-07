@@ -1,0 +1,278 @@
+<script lang="ts">
+	/*
+		TanStack Table v9 (Svelte adapter, Svelte 5 runes only).
+
+		Key differences from v8, in case the installed version drifts from what
+		this was written against — check https://tanstack.com/table/latest/docs/framework/svelte/guide/migrating
+		- `createSvelteTable` -> `createTable`, and it now requires a `features`
+		  object (built with `tableFeatures(...)`). We don't need sorting/
+		  filtering/pagination here, so it's just `tableFeatures({})` — the core
+		  row model is automatic, no `getCoreRowModel` option anymore.
+		- `flexRender` + `<svelte:component>` -> a single `<FlexRender {header} />`
+		  / `<FlexRender {cell} />` component.
+		- `createColumnHelper<Person>()` -> `createColumnHelper<typeof features, Person>()`,
+		  and `columnHelper.columns([...])` instead of a bare array, for inference.
+	*/
+	import {
+		createTable,
+		createColumnHelper,
+		tableFeatures,
+		FlexRender
+	} from '@tanstack/svelte-table';
+	import type { ColumnDef } from '@tanstack/svelte-table';
+
+	import Modal from './Modal.svelte';
+	import * as Table from '$lib/components/ui/table/index.js';
+	import * as Tabs from '$lib/components/ui/tabs/index.js';
+	import * as Select from '$lib/components/ui/select/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Textarea } from '$lib/components/ui/textarea/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { cn } from '$lib/utils.js';
+	import { IconCheck } from '@tabler/icons-svelte';
+	// import CheckIcon from 'lucide-svelte/icons/check';
+
+	import { searchProducts } from '$lib/api/products';
+	import { getProductPriceForLabel, PRODUCT_CATEGORY_OPTIONS } from '$lib/utils/pricing';
+	import { formatNaira, categoryLabel } from '$lib/utils/format';
+	import type { Product, PriceLabel } from '$lib/api/types';
+	import type { CreateItemPayload } from '$lib/api/quotes';
+
+	let {
+		label,
+		onClose,
+		onSubmit
+	}: {
+		label: PriceLabel;
+		onClose: () => void;
+		onSubmit: (payload: CreateItemPayload) => void;
+	} = $props();
+
+	let activeTab = $state<'catalog' | 'freeform'>('catalog');
+
+	// --- Catalog tab -------------------------------------------------
+
+	let search = $state('');
+	// '__all__' is a sentinel: bits-ui's Select can't use '' as a real value.
+	let categoryFilter = $state('__all__');
+	let products = $state<Product[]>([]);
+	let searching = $state(false);
+	let selectedProduct = $state<Product | null>(null);
+	let quantity = $state(1);
+
+	let searchTimer: ReturnType<typeof setTimeout>;
+
+	async function runSearch() {
+		searching = true;
+		try {
+			const category = categoryFilter === '__all__' ? undefined : categoryFilter;
+			products = await searchProducts({
+				search: search || undefined,
+				category: category as Product['category'] | undefined
+			});
+		} finally {
+			searching = false;
+		}
+	}
+
+	// Debounce as the user types/changes the filter.
+	$effect(() => {
+		// touch both so the effect re-runs on either change
+		void search;
+		void categoryFilter;
+		clearTimeout(searchTimer);
+		searchTimer = setTimeout(runSearch, 300);
+	});
+
+	// Load the initial unfiltered list once.
+	runSearch();
+
+	// v9 requires an explicit (possibly empty) feature set. We only need the
+	// automatic core row model, so nothing to register here.
+	const features = tableFeatures({});
+
+	const columnHelper = createColumnHelper<typeof features, Product>();
+
+	const columns: ColumnDef<typeof features, Product>[] = columnHelper.columns([
+		columnHelper.accessor('name', { header: 'Product' }),
+		columnHelper.accessor('brand', { header: 'Brand' }),
+		columnHelper.accessor('category', {
+			header: 'Category',
+			cell: (info) => categoryLabel(info.getValue())
+		}),
+		columnHelper.display({
+			id: 'price',
+			header: 'Price for this quote',
+			cell: (info) => formatNaira(getProductPriceForLabel(info.row.original, label))
+		})
+	]);
+
+	const table = createTable({
+		features,
+		columns,
+		get data() {
+			return products;
+		}
+	});
+
+	function selectProduct(product: Product) {
+		selectedProduct = selectedProduct?.id === product.id ? null : product;
+	}
+
+	function submitCatalog(e: Event) {
+		e.preventDefault();
+		if (!selectedProduct) return;
+		onSubmit({ productId: selectedProduct.id, quantity });
+	}
+
+	// --- Freeform tab --------------------------------------------------
+
+	let description = $state('');
+	let brand = $state('');
+	let specification = $state('');
+	let unitPrice = $state<number | null>(null);
+	let freeformQuantity = $state(1);
+
+	function submitFreeform(e: Event) {
+		e.preventDefault();
+		if (!description.trim() || unitPrice === null) return;
+		onSubmit({
+			description: description.trim(),
+			brand: brand.trim() || undefined,
+			specification: specification.trim() || undefined,
+			unitPrice,
+			quantity: freeformQuantity
+		});
+	}
+</script>
+
+<Modal title="Add item" {onClose} wide>
+	<Tabs.Root bind:value={activeTab} class="w-full">
+		<Tabs.List>
+			<Tabs.Trigger value="catalog">From catalog</Tabs.Trigger>
+			<Tabs.Trigger value="freeform">Type it in</Tabs.Trigger>
+		</Tabs.List>
+
+		<Tabs.Content value="catalog">
+			<form class="flex flex-col gap-3 pt-3" onsubmit={submitCatalog}>
+				<div class="flex gap-2">
+					<Input placeholder="Search products…" bind:value={search} class="flex-1" />
+					<Select.Root type="single" bind:value={categoryFilter}>
+						<Select.Trigger class="w-48">
+							{categoryFilter === '__all__' ? 'All categories' : categoryLabel(categoryFilter)}
+						</Select.Trigger>
+						<Select.Content>
+							<Select.Item value="__all__">All categories</Select.Item>
+							{#each PRODUCT_CATEGORY_OPTIONS as c (c)}
+								<Select.Item value={c}>{categoryLabel(c)}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
+
+				<div class="max-h-64 overflow-y-auto rounded-md border">
+					{#if searching}
+						<p class="p-3 text-sm text-muted-foreground">Searching…</p>
+					{:else if products.length === 0}
+						<p class="p-3 text-sm text-muted-foreground">No products found.</p>
+					{:else}
+						<Table.Root>
+							<Table.Header class="sticky top-0 bg-background">
+								{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
+									<Table.Row>
+										<Table.Head class="w-8"></Table.Head>
+										{#each headerGroup.headers as header (header.id)}
+											<Table.Head>
+												{#if !header.isPlaceholder}
+													<FlexRender {header} />
+												{/if}
+											</Table.Head>
+										{/each}
+									</Table.Row>
+								{/each}
+							</Table.Header>
+							<Table.Body>
+								{#each table.getRowModel().rows as row (row.id)}
+									<Table.Row
+										class={cn(
+											'cursor-pointer',
+											selectedProduct?.id === row.original.id && 'bg-muted'
+										)}
+										onclick={() => selectProduct(row.original)}
+									>
+										<Table.Cell class="w-8">
+											{#if selectedProduct?.id === row.original.id}
+												<IconCheck class="size-4 text-primary" />
+											{/if}
+										</Table.Cell>
+										{#each row.getAllCells() as cell (cell.id)}
+											<Table.Cell>
+												<FlexRender {cell} />
+											</Table.Cell>
+										{/each}
+									</Table.Row>
+								{/each}
+							</Table.Body>
+						</Table.Root>
+					{/if}
+				</div>
+
+				{#if selectedProduct}
+					<div class="flex items-center justify-between gap-3 rounded-md border bg-muted/40 p-3">
+						<p class="text-sm text-muted-foreground">{selectedProduct.specification}</p>
+						<div class="flex items-center gap-2">
+							<Label for="catalog-qty" class="text-sm">Quantity</Label>
+							<Input id="catalog-qty" type="number" min="1" bind:value={quantity} class="w-20" />
+						</div>
+					</div>
+				{/if}
+
+				<div class="mt-2 flex justify-end gap-2">
+					<Button type="button" variant="secondary" onclick={onClose}>Cancel</Button>
+					<Button type="submit" disabled={!selectedProduct}>Add item</Button>
+				</div>
+			</form>
+		</Tabs.Content>
+
+		<Tabs.Content value="freeform">
+			<form class="flex flex-col gap-3 pt-3" onsubmit={submitFreeform}>
+				<div class="flex flex-col gap-1.5">
+					<Label for="ff-description">Description</Label>
+					<Input
+						id="ff-description"
+						bind:value={description}
+						required
+						placeholder="e.g. Connecting cables & accessories"
+					/>
+				</div>
+
+				<div class="flex flex-col gap-1.5">
+					<Label for="ff-brand">Brand (optional)</Label>
+					<Input id="ff-brand" bind:value={brand} />
+				</div>
+
+				<div class="flex flex-col gap-1.5">
+					<Label for="ff-spec">Specification (optional)</Label>
+					<Textarea id="ff-spec" bind:value={specification} rows={2} />
+				</div>
+
+				<div class="flex gap-3">
+					<div class="flex flex-1 flex-col gap-1.5">
+						<Label for="ff-price">Unit price (₦)</Label>
+						<Input id="ff-price" type="number" min="0" step="any" bind:value={unitPrice} required />
+					</div>
+					<div class="flex flex-col gap-1.5">
+						<Label for="ff-qty">Quantity</Label>
+						<Input id="ff-qty" type="number" min="1" bind:value={freeformQuantity} class="w-20" />
+					</div>
+				</div>
+
+				<div class="mt-2 flex justify-end gap-2">
+					<Button type="button" variant="secondary" onclick={onClose}>Cancel</Button>
+					<Button type="submit">Add item</Button>
+				</div>
+			</form>
+		</Tabs.Content>
+	</Tabs.Root>
+</Modal>

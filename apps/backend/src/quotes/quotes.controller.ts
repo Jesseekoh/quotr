@@ -62,10 +62,6 @@ export class QuotesController {
     return this.quotesService.removeOption(id, optionId);
   }
 
-  // -----------------------------------------------------------------
-  // Items
-  // -----------------------------------------------------------------
-
   @Post(':id/items')
   addItem(@Param('id') id: string, @Body() dto: CreateItemDto) {
     return this.quotesService.addItem(id, dto);

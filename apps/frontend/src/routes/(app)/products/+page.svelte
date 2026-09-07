@@ -4,9 +4,11 @@
 	import ChevronRightIcon from '@tabler/icons-svelte/icons/chevron-right';
 	import ChevronsLeftIcon from '@tabler/icons-svelte/icons/chevrons-left';
 	import ChevronsRightIcon from '@tabler/icons-svelte/icons/chevrons-right';
+	import PlusIcon from '@tabler/icons-svelte/icons/plus';
 	import { FlexRender, createColumnHelper, createTable } from '@tanstack/svelte-table';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import * as Select from '$lib/components/ui/select/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -15,6 +17,7 @@
 	import { resolve } from '$app/paths';
 	import type { Product } from './+page.server.js';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
+	import CreateProductForm from '$lib/components/create-product-form.svelte';
 
 	let { data } = $props();
 
@@ -126,6 +129,13 @@
 	});
 
 	const pagination = $derived(table.atoms.pagination.get());
+
+	let dialogOpen = $state(false);
+
+	function handleProductCreated() {
+		dialogOpen = false;
+		invalidateAll();
+	}
 </script>
 
 <div class="flex flex-1 flex-col">
@@ -161,6 +171,26 @@
 						oninput={onSearchInput}
 					/>
 				</div>
+
+				<Dialog.Root bind:open={dialogOpen}>
+					<Dialog.Trigger>
+						{#snippet child({ props })}
+							<Button {...props} class="sm:ml-auto">
+								<PlusIcon class="size-4" />
+								Add Product
+							</Button>
+						{/snippet}
+					</Dialog.Trigger>
+					<Dialog.Content class="max-h-[90vh] max-w-2xl overflow-y-auto">
+						<Dialog.Header>
+							<Dialog.Title>New Product</Dialog.Title>
+							<Dialog.Description>
+								Add a new product to your catalog. Fill in the details below.
+							</Dialog.Description>
+						</Dialog.Header>
+						<CreateProductForm onCreated={handleProductCreated} />
+					</Dialog.Content>
+				</Dialog.Root>
 			</div>
 
 			<!-- Data table -->
