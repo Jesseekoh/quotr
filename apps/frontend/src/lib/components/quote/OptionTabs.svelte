@@ -8,14 +8,12 @@
 
 	let {
 		options,
-		onAddOption,
 		onRemoveOption,
 		onAddItem,
 		onQuantityChange,
 		onRemoveItem
 	}: {
 		options: QuoteOptionWithTotals[];
-		onAddOption: () => void;
 		onRemoveOption: (optionId: string) => void;
 		onAddItem: (optionId: string) => void;
 		onQuantityChange: (itemId: string, quantity: number) => void;
@@ -42,13 +40,10 @@
 				Alternative packages the customer can choose between, e.g. different battery choices.
 			</Card.Description>
 		</div>
-		<Button type="button" variant="outline" onclick={onAddOption}>Add option</Button>
 	</Card.Header>
 	<Card.Content>
 		{#if options.length === 0}
-			<p class="text-sm text-muted-foreground">
-				No options yet. Items you add outside an option apply to the whole quote.
-			</p>
+			<p class="text-sm text-muted-foreground">No options yet. Add options from a quote section.</p>
 		{:else}
 			<Tabs.Root bind:value={() => `${activeIndex}`, (value) => (activeIndex = Number(value))}>
 				<Tabs.List>
@@ -67,6 +62,7 @@
 								<Button
 									type="button"
 									variant="secondary"
+									disabled={!activeOption.quoteSectionId}
 									onclick={() => onAddItem(activeOption!.id)}
 								>
 									Add item

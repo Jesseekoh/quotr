@@ -8,6 +8,7 @@
 		sections,
 		onAddSection,
 		onAddItem,
+		onAddOption,
 		onRemoveSection,
 		onQuantityChange,
 		onRemoveItem
@@ -15,6 +16,7 @@
 		sections: QuoteSection[];
 		onAddSection: () => void;
 		onAddItem: (sectionId: string) => void;
+		onAddOption: (sectionId: string) => void;
 		onRemoveSection: (sectionId: string) => void;
 		onQuantityChange: (itemId: string, quantity: number) => void;
 		onRemoveItem: (itemId: string) => void;
@@ -58,8 +60,17 @@
 							</Button>
 							<Button
 								type="button"
+								variant="secondary"
+								size="sm"
+								onclick={() => onAddOption(section.id)}
+							>
+								Add option
+							</Button>
+							<Button
+								type="button"
 								variant="destructive"
 								size="sm"
+								disabled={section.items.length > 0 || section.options.length > 0}
 								onclick={() => onRemoveSection(section.id)}
 							>
 								Remove

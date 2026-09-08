@@ -100,7 +100,7 @@
 						</Button>
 					</Field>
 					<FieldDescription class="text-center">
-						Don't have an account? <a href="##">Sign up</a>
+						Don't have an account? <a href={resolve('/sign-up')}>Sign up</a>
 					</FieldDescription>
 				</FieldGroup>
 			</form>

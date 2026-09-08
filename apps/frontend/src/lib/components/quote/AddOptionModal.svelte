@@ -4,21 +4,19 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
-	import type { QuoteSection } from '$lib/api/types';
 
 	let {
 		open = $bindable(false),
-		sections = [],
+		sectionId,
 		onSubmit
 	}: {
 		open: boolean;
-		sections?: QuoteSection[];
-		onSubmit: (payload: { name: string; description?: string; quoteSectionId?: string }) => void;
+		sectionId: string;
+		onSubmit: (payload: { name: string; description?: string; quoteSectionId: string }) => void;
 	} = $props();
 
 	let name = $state('');
 	let description = $state('');
-	let sectionId = $state('');
 
 	function submit(e: Event) {
 		e.preventDefault();
@@ -26,11 +24,10 @@
 		onSubmit({
 			name: name.trim(),
 			description: description.trim() || undefined,
-			quoteSectionId: sectionId || undefined
+			quoteSectionId: sectionId
 		});
 		name = '';
 		description = '';
-		sectionId = '';
 		open = false;
 	}
 </script>
@@ -47,22 +44,6 @@
 				<Label for="opt-name">Name</Label>
 				<Input id="opt-name" bind:value={name} placeholder="e.g. Battery Option E" required />
 			</div>
-
-			{#if sections.length > 0}
-				<div class="flex flex-col gap-1.5">
-					<Label for="opt-section">Section (optional)</Label>
-					<select
-						id="opt-section"
-						bind:value={sectionId}
-						class="h-9 rounded-md border bg-transparent px-2 text-sm"
-					>
-						<option value="">No section</option>
-						{#each sections as section (section.id)}
-							<option value={section.id}>{section.name}</option>
-						{/each}
-					</select>
-				</div>
-			{/if}
 
 			<div class="flex flex-col gap-1.5">
 				<Label for="opt-desc">Description (optional)</Label>
