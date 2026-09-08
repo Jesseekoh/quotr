@@ -24,7 +24,7 @@
 {#if items.length === 0}
 	<p class="py-3 text-sm text-muted-foreground">No items yet.</p>
 {:else}
-	<div class="overflow-x-auto rounded-md border">
+	<div class="hidden overflow-x-auto rounded-md border md:block">
 		<Table.Root>
 			<Table.Header>
 				<Table.Row>
@@ -68,5 +68,48 @@
 				{/each}
 			</Table.Body>
 		</Table.Root>
+	</div>
+
+	<div class="flex flex-col gap-3 md:hidden">
+		{#each items as item (item.id)}
+			<article class="rounded-md border bg-card p-4">
+				<div class="flex items-start justify-between gap-3">
+					<div class="min-w-0">
+						<h3 class="font-medium wrap-break-word">{item.description}</h3>
+						{#if item.specification}
+							<p class="mt-1 text-xs wrap-break-word text-muted-foreground">{item.specification}</p>
+						{/if}
+					</div>
+					<Button type="button" variant="link" size="sm" onclick={() => onRemove(item.id)}>
+						Remove
+					</Button>
+				</div>
+
+				<div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+					<div>
+						<div class="text-xs text-muted-foreground">Brand</div>
+						<div>{item.brand ?? '—'}</div>
+					</div>
+					<div>
+						<div class="text-xs text-muted-foreground">Unit price</div>
+						<div class="tabular-nums">{formatNaira(item.unitPrice)}</div>
+					</div>
+					<div>
+						<div class="text-xs text-muted-foreground">Quantity</div>
+						<Input
+							type="number"
+							min="1"
+							value={item.quantity}
+							onchange={(e) => handleQtyChange(item, e)}
+							class="mt-1 w-20"
+						/>
+					</div>
+					<div>
+						<div class="text-xs text-muted-foreground">Total</div>
+						<div class="font-semibold tabular-nums">{formatNaira(item.totalPrice)}</div>
+					</div>
+				</div>
+			</article>
+		{/each}
 	</div>
 {/if}

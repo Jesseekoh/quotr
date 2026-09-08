@@ -1,7 +1,4 @@
 <script lang="ts">
-	/*
-		TanStack Table v9 (Svelte adapter, Svelte 5 runes only).
-	*/
 	import {
 		createTable,
 		createColumnHelper,
@@ -9,6 +6,7 @@
 		FlexRender
 	} from '@tanstack/svelte-table';
 	import type { ColumnDef } from '@tanstack/svelte-table';
+	import { onMount } from 'svelte';
 
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
@@ -18,6 +16,7 @@
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import { cn } from '$lib/utils.js';
 	import { IconCheck } from '@tabler/icons-svelte';
 
@@ -52,6 +51,7 @@
 	let quantity = $state(1);
 
 	let searchTimer: ReturnType<typeof setTimeout>;
+	let hasMounted = false;
 
 	async function runSearch() {
 		searching = true;
@@ -71,12 +71,16 @@
 		// touch both so the effect re-runs on either change
 		void search;
 		void categoryFilter;
+		if (!hasMounted) return;
 		clearTimeout(searchTimer);
 		searchTimer = setTimeout(runSearch, 300);
 	});
 
-	// Load the initial unfiltered list once.
-	runSearch();
+	onMount(() => {
+		hasMounted = true;
+		void runSearch();
+		return () => clearTimeout(searchTimer);
+	});
 
 	// v9 requires an explicit (possibly empty) feature set.
 	const features = tableFeatures({});
@@ -123,6 +127,7 @@
 	let specification = $state('');
 	let unitPrice = $state<number | null>(null);
 	let freeformQuantity = $state(1);
+	let fixedPrice = $state(false);
 
 	function submitFreeform(e: Event) {
 		e.preventDefault();
@@ -132,7 +137,7 @@
 			brand: brand.trim() || undefined,
 			specification: specification.trim() || undefined,
 			unitPrice,
-			quantity: freeformQuantity,
+			quantity: fixedPrice ? 1 : freeformQuantity,
 			quoteSectionId: sectionId
 		});
 		open = false;
@@ -140,7 +145,7 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="max-h-[90vh] max-w-3xl overflow-y-auto">
+	<Dialog.Content class="max-h-[90vh] max-w-3xl min-w-0 overflow-y-auto">
 		<Dialog.Header>
 			<Dialog.Title>Add item</Dialog.Title>
 			<Dialog.Description>
@@ -148,14 +153,14 @@
 			</Dialog.Description>
 		</Dialog.Header>
 
-		<Tabs.Root bind:value={activeTab} class="w-full">
+		<Tabs.Root bind:value={activeTab} class="w-full min-w-0">
 			<Tabs.List>
 				<Tabs.Trigger value="catalog">From catalog</Tabs.Trigger>
 				<Tabs.Trigger value="freeform">Type it in</Tabs.Trigger>
 			</Tabs.List>
 
 			<Tabs.Content value="catalog">
-				<form class="flex flex-col gap-3 pt-3" onsubmit={submitCatalog}>
+				<form class="flex min-w-0 flex-col gap-3 pt-3" onsubmit={submitCatalog}>
 					<div class="flex gap-2">
 						<Input placeholder="Search products…" bind:value={search} class="flex-1" />
 						<Select.Root type="single" bind:value={categoryFilter}>
@@ -171,19 +176,24 @@
 						</Select.Root>
 					</div>
 
-					<div class="max-h-64 overflow-y-auto rounded-md border">
+					<div class="max-h-64 max-w-full min-w-0 overflow-auto rounded-md border">
 						{#if searching}
 							<p class="p-3 text-sm text-muted-foreground">Searching…</p>
 						{:else if products.length === 0}
 							<p class="p-3 text-sm text-muted-foreground">No products found.</p>
 						{:else}
-							<Table.Root>
+							<Table.Root class="w-max min-w-full text-xs">
 								<Table.Header class="sticky top-0 bg-background">
 									{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
 										<Table.Row>
-											<Table.Head class="w-8"></Table.Head>
+											<Table.Head class="h-8 w-8 px-1"></Table.Head>
 											{#each headerGroup.headers as header (header.id)}
-												<Table.Head>
+												<Table.Head
+													class={cn(
+														'h-8 px-1 text-xs',
+														header.column.id === 'name' && 'max-w-48 truncate'
+													)}
+												>
 													{#if !header.isPlaceholder}
 														<FlexRender {header} />
 													{/if}
@@ -201,13 +211,18 @@
 											)}
 											onclick={() => selectProduct(row.original)}
 										>
-											<Table.Cell class="w-8">
+											<Table.Cell class="w-8 p-1">
 												{#if selectedProduct?.id === row.original.id}
 													<IconCheck class="size-4 text-primary" />
 												{/if}
 											</Table.Cell>
 											{#each row.getAllCells() as cell (cell.id)}
-												<Table.Cell>
+												<Table.Cell
+													class={cn(
+														'p-1 text-xs',
+														cell.column.id === 'name' && 'max-w-48 truncate'
+													)}
+												>
 													<FlexRender {cell} />
 												</Table.Cell>
 											{/each}
@@ -275,9 +290,21 @@
 						</div>
 						<div class="flex flex-col gap-1.5">
 							<Label for="ff-qty">Quantity</Label>
-							<Input id="ff-qty" type="number" min="1" bind:value={freeformQuantity} class="w-20" />
+							<Input
+								id="ff-qty"
+								type="number"
+								min="1"
+								bind:value={freeformQuantity}
+								disabled={fixedPrice}
+								class="w-20"
+							/>
 						</div>
 					</div>
+
+					<label for="ff-fixed-price" class="flex items-center gap-2 text-sm">
+						<Checkbox id="ff-fixed-price" bind:checked={fixedPrice} />
+						<span>Fixed price (quantity 1)</span>
+					</label>
 
 					<Dialog.Footer>
 						<Dialog.Close>
