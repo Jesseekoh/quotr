@@ -9,6 +9,10 @@ import {
 import { ProductCategory } from '../../generated/prisma/enums.js';
 
 export class CreateItemDto {
+  @IsOptional()
+  @IsString()
+  quoteSectionId?: string | null;
+
   // Omit to add this item as "common" (applies to every option on the quote).
   // Set to attach it to one specific option instead (e.g. one battery choice).
   @IsOptional()

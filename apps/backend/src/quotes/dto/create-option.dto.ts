@@ -7,6 +7,10 @@ import {
 } from 'class-validator';
 
 export class CreateOptionDto {
+  @IsOptional()
+  @IsString()
+  quoteSectionId?: string | null;
+
   @IsString()
   @IsNotEmpty()
   name: string;

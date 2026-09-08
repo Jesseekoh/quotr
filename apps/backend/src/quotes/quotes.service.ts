@@ -12,6 +12,8 @@ import { CreateOptionDto } from './dto/create-option.dto.js';
 import { UpdateOptionDto } from './dto/update-option.dto.js';
 import { CreateItemDto } from './dto/create-item.dto.js';
 import { UpdateItemDto } from './dto/update-item.dto.js';
+import { CreateSectionDto } from './dto/create-section.dto.js';
+import { UpdateSectionDto } from './dto/update-section.dto.js';
 import { Decimal } from '@prisma/client/runtime/client';
 import { Prisma, Quote } from '../generated/prisma/client.js';
 import { QuoteOrderByWithRelationInput } from '../generated/prisma/models.js';
@@ -24,6 +26,16 @@ const QUOTE_INCLUDE = {
   options: {
     orderBy: { sortOrder: 'asc' as const },
     include: { items: { orderBy: { sortOrder: 'asc' as const } } },
+  },
+  quoteSections: {
+    orderBy: { sortOrder: 'asc' as const },
+    include: {
+      items: { orderBy: { sortOrder: 'asc' as const } },
+      options: {
+        orderBy: { sortOrder: 'asc' as const },
+        include: { items: { orderBy: { sortOrder: 'asc' as const } } },
+      },
+    },
   },
 };
 
@@ -187,9 +199,13 @@ export class QuotesService {
 
   async addOption(quoteId: string, dto: CreateOptionDto) {
     await this.findQuoteOrThrow(quoteId);
+    if (dto.quoteSectionId) {
+      await this.findSectionOrThrow(quoteId, dto.quoteSectionId);
+    }
     await this.prisma.quoteOption.create({
       data: {
         quoteId,
+        quoteSectionId: dto.quoteSectionId ?? null,
         name: dto.name,
         description: dto.description,
         isDefault: dto.isDefault ?? false,
@@ -201,6 +217,9 @@ export class QuotesService {
 
   async updateOption(quoteId: string, optionId: string, dto: UpdateOptionDto) {
     await this.findOptionOrThrow(quoteId, optionId);
+    if (dto.quoteSectionId) {
+      await this.findSectionOrThrow(quoteId, dto.quoteSectionId);
+    }
     await this.prisma.quoteOption.update({
       where: { id: optionId },
       data: dto,
@@ -235,11 +254,19 @@ export class QuotesService {
     if (dto.quoteOptionId) {
       await this.findOptionOrThrow(quoteId, dto.quoteOptionId);
     }
+    if (dto.quoteSectionId) {
+      await this.findSectionOrThrow(quoteId, dto.quoteSectionId);
+    }
 
     const data = await this.buildItemData(quote, dto);
 
     await this.prisma.quoteItem.create({
-      data: { quoteId, quoteOptionId: dto.quoteOptionId ?? null, ...data },
+      data: {
+        quoteId,
+        quoteOptionId: dto.quoteOptionId ?? null,
+        quoteSectionId: dto.quoteSectionId ?? null,
+        ...data,
+      },
     });
 
     return this.findOne(quoteId);
@@ -252,9 +279,16 @@ export class QuotesService {
     if (dto.quoteOptionId) {
       await this.findOptionOrThrow(quoteId, dto.quoteOptionId);
     }
+    if (dto.quoteSectionId) {
+      await this.findSectionOrThrow(quoteId, dto.quoteSectionId);
+    }
 
     const merged: CreateItemDto = {
       quoteOptionId: dto.quoteOptionId,
+      quoteSectionId:
+        dto.quoteSectionId !== undefined
+          ? dto.quoteSectionId
+          : (item.quoteSectionId ?? undefined),
       productId:
         dto.productId !== undefined
           ? dto.productId
@@ -280,6 +314,9 @@ export class QuotesService {
         ...(dto.quoteOptionId !== undefined
           ? { quoteOptionId: dto.quoteOptionId || null }
           : {}),
+        ...(dto.quoteSectionId !== undefined
+          ? { quoteSectionId: dto.quoteSectionId || null }
+          : {}),
       },
     });
 
@@ -292,6 +329,47 @@ export class QuotesService {
     return this.findOne(quoteId);
   }
 
+  async addSection(quoteId: string, dto: CreateSectionDto) {
+    await this.findQuoteOrThrow(quoteId);
+    await this.prisma.quoteSection.create({
+      data: {
+        quoteId,
+        name: dto.name,
+        sortOrder: dto.sortOrder ?? 0,
+      },
+    });
+    return this.findOne(quoteId);
+  }
+
+  async updateSection(
+    quoteId: string,
+    sectionId: string,
+    dto: UpdateSectionDto,
+  ) {
+    await this.findSectionOrThrow(quoteId, sectionId);
+    await this.prisma.quoteSection.update({
+      where: { id: sectionId },
+      data: dto,
+    });
+    return this.findOne(quoteId);
+  }
+
+  async removeSection(quoteId: string, sectionId: string) {
+    await this.findSectionOrThrow(quoteId, sectionId);
+    await this.prisma.$transaction([
+      this.prisma.quoteItem.updateMany({
+        where: { quoteSectionId: sectionId },
+        data: { quoteSectionId: null },
+      }),
+      this.prisma.quoteOption.updateMany({
+        where: { quoteSectionId: sectionId },
+        data: { quoteSectionId: null },
+      }),
+      this.prisma.quoteSection.delete({ where: { id: sectionId } }),
+    ]);
+    return this.findOne(quoteId);
+  }
+
   private async findItemOrThrow(quoteId: string, itemId: string) {
     const item = await this.prisma.quoteItem.findFirst({
       where: { id: itemId, quoteId },
@@ -301,6 +379,17 @@ export class QuotesService {
         `Item ${itemId} not found on quote ${quoteId}`,
       );
     return item;
+  }
+
+  private async findSectionOrThrow(quoteId: string, sectionId: string) {
+    const section = await this.prisma.quoteSection.findFirst({
+      where: { id: sectionId, quoteId },
+    });
+    if (!section)
+      throw new NotFoundException(
+        `Section ${sectionId} not found on quote ${quoteId}`,
+      );
+    return section;
   }
 
   private async findQuoteOrThrow(quoteId: string) {

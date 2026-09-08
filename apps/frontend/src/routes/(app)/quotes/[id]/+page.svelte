@@ -7,6 +7,8 @@
 	import TotalsSummary from '$lib/components/quote/TotalsSummary.svelte';
 	import AddItemModal from '$lib/components/quote/AddItemModal.svelte';
 	import AddOptionModal from '$lib/components/quote/AddOptionModal.svelte';
+	import AddSectionModal from '$lib/components/quote/AddSectionModal.svelte';
+	import QuoteSections from '$lib/components/quote/QuoteSections.svelte';
 	import * as quotesApi from '$lib/api/quotes';
 	import { ApiError } from '$lib/api/client';
 	import type { PriceLabel, QuoteDetail } from '$lib/api/types';
@@ -31,6 +33,10 @@
 	let addItemTarget = $state<string | null>(null);
 	let showAddItemModal = $state(false);
 	let showAddOptionModal = $state(false);
+	let showAddSectionModal = $state(false);
+	let addItemSectionId = $state<string | null>(null);
+
+	let commonItems = $derived(quote.items.filter((item) => item.quoteSectionId === null));
 
 	async function withLoading(fn: () => Promise<void>) {
 		loading = true;
@@ -44,8 +50,9 @@
 		}
 	}
 
-	function openAddItem(targetOptionId: string | null) {
+	function openAddItem(targetOptionId: string | null, targetSectionId: string | null = null) {
 		addItemTarget = targetOptionId;
+		addItemSectionId = targetSectionId;
 		showAddItemModal = true;
 	}
 
@@ -64,10 +71,28 @@
 		});
 	}
 
-	async function handleAddOption(payload: { name: string; description?: string }) {
+	async function handleAddOption(payload: {
+		name: string;
+		description?: string;
+		quoteSectionId?: string;
+	}) {
 		await withLoading(async () => {
 			quote = await quotesApi.addOption(quote.id, payload);
 			showAddOptionModal = false;
+		});
+	}
+
+	async function handleAddSection(payload: { name: string }) {
+		await withLoading(async () => {
+			quote = await quotesApi.addSection(quote.id, payload);
+			showAddSectionModal = false;
+		});
+	}
+
+	async function handleRemoveSection(sectionId: string) {
+		if (!confirm('Remove this section? Its items will remain in the quote.')) return;
+		await withLoading(async () => {
+			quote = await quotesApi.removeSection(quote.id, sectionId);
 		});
 	}
 
@@ -80,7 +105,11 @@
 
 	async function handleAddItem(payload: quotesApi.CreateItemPayload) {
 		await withLoading(async () => {
-			quote = await quotesApi.addItem(quote.id, { ...payload, quoteOptionId: addItemTarget });
+			quote = await quotesApi.addItem(quote.id, {
+				...payload,
+				quoteOptionId: addItemTarget,
+				quoteSectionId: addItemSectionId
+			});
 			showAddItemModal = false;
 		});
 	}
@@ -122,6 +151,15 @@
 		disabled={loading}
 	/>
 
+	<QuoteSections
+		sections={quote.quoteSections}
+		onAddSection={() => (showAddSectionModal = true)}
+		onAddItem={(sectionId) => openAddItem(null, sectionId)}
+		onRemoveSection={handleRemoveSection}
+		onQuantityChange={handleQuantityChange}
+		onRemoveItem={handleRemoveItem}
+	/>
+
 	<Card.Root>
 		<Card.Header
 			class="flex-col items-start justify-between gap-3 space-y-0 sm:flex-row sm:items-center"
@@ -135,7 +173,7 @@
 				part of one alternative package.
 			</p>
 			<ItemsTable
-				items={quote.items}
+				items={commonItems}
 				onQuantityChange={handleQuantityChange}
 				onRemove={handleRemoveItem}
 			/>
@@ -154,6 +192,17 @@
 	<TotalsSummary options={quote.options} summary={quote.summary} />
 </div>
 
-<AddItemModal bind:open={showAddItemModal} label={quote.label} onSubmit={handleAddItem} />
+<AddItemModal
+	bind:open={showAddItemModal}
+	label={quote.label}
+	sectionId={addItemSectionId}
+	onSubmit={handleAddItem}
+/>
 
-<AddOptionModal bind:open={showAddOptionModal} onSubmit={handleAddOption} />
+<AddOptionModal
+	bind:open={showAddOptionModal}
+	sections={quote.quoteSections}
+	onSubmit={handleAddOption}
+/>
+
+<AddSectionModal bind:open={showAddSectionModal} onSubmit={handleAddSection} />

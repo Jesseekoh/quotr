@@ -30,10 +30,12 @@
 	let {
 		open = $bindable(false),
 		label,
+		sectionId = null,
 		onSubmit
 	}: {
 		open: boolean;
 		label: PriceLabel;
+		sectionId?: string | null;
 		onSubmit: (payload: CreateItemPayload) => void;
 	} = $props();
 
@@ -110,7 +112,7 @@
 	function submitCatalog(e: Event) {
 		e.preventDefault();
 		if (!selectedProduct) return;
-		onSubmit({ productId: selectedProduct.id, quantity });
+		onSubmit({ productId: selectedProduct.id, quantity, quoteSectionId: sectionId });
 		open = false;
 	}
 
@@ -130,7 +132,8 @@
 			brand: brand.trim() || undefined,
 			specification: specification.trim() || undefined,
 			unitPrice,
-			quantity: freeformQuantity
+			quantity: freeformQuantity,
+			quoteSectionId: sectionId
 		});
 		open = false;
 	}

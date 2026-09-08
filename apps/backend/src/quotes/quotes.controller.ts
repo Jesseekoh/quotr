@@ -14,6 +14,8 @@ import { CreateOptionDto } from './dto/create-option.dto.js';
 import { UpdateOptionDto } from './dto/update-option.dto.js';
 import { CreateItemDto } from './dto/create-item.dto.js';
 import { UpdateItemDto } from './dto/update-item.dto.js';
+import { CreateSectionDto } from './dto/create-section.dto.js';
+import { UpdateSectionDto } from './dto/update-section.dto.js';
 @Controller('quotes')
 export class QuotesController {
   constructor(private readonly quotesService: QuotesService) {}
@@ -79,5 +81,27 @@ export class QuotesController {
   @Delete(':id/items/:itemId')
   removeItem(@Param('id') id: string, @Param('itemId') itemId: string) {
     return this.quotesService.removeItem(id, itemId);
+  }
+
+  @Post(':id/sections')
+  addSection(@Param('id') id: string, @Body() dto: CreateSectionDto) {
+    return this.quotesService.addSection(id, dto);
+  }
+
+  @Patch(':id/sections/:sectionId')
+  updateSection(
+    @Param('id') id: string,
+    @Param('sectionId') sectionId: string,
+    @Body() dto: UpdateSectionDto,
+  ) {
+    return this.quotesService.updateSection(id, sectionId, dto);
+  }
+
+  @Delete(':id/sections/:sectionId')
+  removeSection(
+    @Param('id') id: string,
+    @Param('sectionId') sectionId: string,
+  ) {
+    return this.quotesService.removeSection(id, sectionId);
   }
 }

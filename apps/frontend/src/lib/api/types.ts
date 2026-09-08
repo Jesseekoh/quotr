@@ -48,6 +48,7 @@ export interface QuoteItem {
 	id: string;
 	quoteId: string;
 	quoteOptionId: string | null;
+	quoteSectionId: string | null;
 	productId: string | null;
 	description: string;
 	brand: string | null;
@@ -63,6 +64,7 @@ export interface QuoteItem {
 export interface QuoteOption {
 	id: string;
 	quoteId: string;
+	quoteSectionId: string | null;
 	name: string;
 	description: string | null;
 	isDefault: boolean;
@@ -75,6 +77,19 @@ export interface QuoteOptionWithTotals extends QuoteOption {
 	items: QuoteItem[];
 	optionItemsTotal: number;
 	grandTotal: number;
+}
+
+export interface QuoteSection {
+	id: string;
+	quoteId: string;
+	name: string;
+	sortOrder: number;
+	items: QuoteItem[];
+	options: QuoteOptionWithItems[];
+}
+
+export interface QuoteOptionWithItems extends QuoteOption {
+	items: QuoteItem[];
 }
 
 export interface QuoteSummary {
@@ -97,6 +112,7 @@ export interface QuoteDetail {
 	// Items with no quoteOptionId - apply to every option.
 	items: QuoteItem[];
 	options: QuoteOptionWithTotals[];
+	quoteSections: QuoteSection[];
 	summary: QuoteSummary;
 	createdAt: string;
 	updatedAt: string;

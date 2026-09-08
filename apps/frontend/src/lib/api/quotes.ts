@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { ProductCategory, PriceLabel, QuoteDetail, QuoteStatus } from './types';
+import type { ProductCategory, PriceLabel, QuoteDetail, QuoteSection, QuoteStatus } from './types';
 
 export function getQuote(id: string, fetchFn?: typeof fetch) {
 	return api.get<QuoteDetail>(`/quotes/${id}`, fetchFn);
@@ -41,6 +41,7 @@ export interface CreateOptionPayload {
 	description?: string;
 	isDefault?: boolean;
 	sortOrder?: number;
+	quoteSectionId?: string | null;
 }
 
 export function addOption(quoteId: string, payload: CreateOptionPayload) {
@@ -55,6 +56,7 @@ export function removeOption(quoteId: string, optionId: string) {
 // or pass `description` + `unitPrice` for a freeform line item.
 export interface CreateItemPayload {
 	quoteOptionId?: string | null;
+	quoteSectionId?: string | null;
 	productId?: string;
 	description?: string;
 	brand?: string;
@@ -76,4 +78,17 @@ export function updateItem(quoteId: string, itemId: string, payload: Partial<Cre
 
 export function removeItem(quoteId: string, itemId: string) {
 	return api.delete<QuoteDetail>(`/quotes/${quoteId}/items/${itemId}`);
+}
+
+export interface CreateSectionPayload {
+	name: string;
+	sortOrder?: number;
+}
+
+export function addSection(quoteId: string, payload: CreateSectionPayload) {
+	return api.post<QuoteDetail>(`/quotes/${quoteId}/sections`, payload);
+}
+
+export function removeSection(quoteId: string, sectionId: string) {
+	return api.delete<QuoteDetail>(`/quotes/${quoteId}/sections/${sectionId}`);
 }
