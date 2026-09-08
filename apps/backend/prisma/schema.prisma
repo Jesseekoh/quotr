@@ -13,15 +13,18 @@ datasource db {
 }
 
 model User {
-  id            String    @id
+  id            String     @id
   name          String
   email         String
-  emailVerified Boolean   @default(false)
+  emailVerified Boolean    @default(false)
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
   sessions      Session[]
   accounts      Account[]
+  products      Product[]
+  customers     Customer[]
+  quotes        Quote[]
 
   @@unique([email])
   @@map("user")
@@ -106,6 +109,8 @@ enum QuoteStatus {
 
 model Product {
   id             String          @id @default(cuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   name           String
   brand          String
   category       ProductCategory
@@ -133,10 +138,13 @@ model Product {
 
   @@index([category])
   @@index([brand])
+  @@index([userId])
 }
 
 model Customer {
   id      String  @id @default(cuid())
+  userId  String
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   name    String
   phone   String?
   email   String?
@@ -146,10 +154,14 @@ model Customer {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Quote {
   id          String @id @default(cuid())
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   quoteNumber String @unique
 
   customerId String
@@ -180,6 +192,8 @@ model Quote {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   quoteSections QuoteSection[]
+
+  @@index([userId])
 }
 
 model QuoteSection {
