@@ -90,7 +90,7 @@ enum ProductCategory {
 }
 
 enum PriceLabel {
-  COST_PRICE
+  // COST_PRICE
   DISCOUNT_PRICE
   RESALE_PRICE
   SPECIAL_PRICE
@@ -112,6 +112,7 @@ model Product {
   // Free-text summary of the product, e.g. "10KW 48V Stackable Hybrid
   // Inverter with Inbuilt 2 x 100A 500V MPPT Solar Charge Controller"
   specification  String
+  warranty       String          @default("N/A")
   // Optional structured technical specs, e.g. { "capacityKWh": 16.07,
   // "voltage": "48VDC", "cycles": 8000, "dod": "80%", "warrantyYears": 10 }
   technicalSpecs Json?
@@ -174,9 +175,38 @@ model Quote {
   // Option A/B/C/D"). Each option only adds its own items on top of the
   // common items above.
   options QuoteOption[]
+  // sections QuoteSection[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  quoteSections QuoteSection[]
+}
+
+model QuoteSection {
+  id String @id @default(cuid())
+
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  // Whatever you want to call it - "Inverter", "Battery", "Transportation,
+  // Labor and Commissioning", "Miscellaneous". No fixed list.
+  name      String
+  // Drives the "1.0 / 2.0 / 3.0" numbering - the app computes the number
+  // from position (sortOrder order), it isn't stored as "1.0" literally,
+  // so reordering/inserting a section doesn't require renumbering others.
+  sortOrder Int    @default(0)
+
+  // Items placed directly under this section's heading (e.g. Inverter,
+  // Installation Material, Transportation/Labor in the sample quote).
+  items   QuoteItem[]
+  // Sometimes a section itself offers alternatives instead of - or in
+  // addition to - flat items (e.g. "2.0 BATTERY" containing Options A-D).
+  options QuoteOption[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([quoteId])
 }
 
 model QuoteOption {
@@ -192,8 +222,10 @@ model QuoteOption {
 
   items QuoteItem[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  quoteSection   QuoteSection? @relation(fields: [quoteSectionId], references: [id])
+  quoteSectionId String?
 }
 
 model QuoteItem {
@@ -227,8 +259,10 @@ model QuoteItem {
 
   sortOrder Int @default(0)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  quoteSection   QuoteSection? @relation(fields: [quoteSectionId], references: [id])
+  quoteSectionId String?
 
   @@index([quoteId])
   @@index([quoteOptionId])
