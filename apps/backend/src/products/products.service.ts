@@ -9,14 +9,14 @@ import { Prisma, ProductCategory } from '../generated/prisma/client.js';
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateProductDto) {
-    return this.prisma.product.create({ data: dto });
+  async create(userId: string, dto: CreateProductDto) {
+    return this.prisma.product.create({ data: { ...dto, userId } });
   }
 
-  async findOne(id: string) {
+  async findOne(userId: string, id: string) {
     try {
       const product = await this.prisma.product.findFirstOrThrow({
-        where: { id, isActive: true },
+        where: { id, userId, isActive: true },
       });
 
       return product;
@@ -31,8 +31,11 @@ export class ProductsService {
     }
   }
 
-  async findAll(filters?: { category?: string; search?: string }) {
-    const where: Prisma.ProductWhereInput = { isActive: true };
+  async findAll(
+    userId: string,
+    filters?: { category?: string; search?: string },
+  ) {
+    const where: Prisma.ProductWhereInput = { userId, isActive: true };
 
     if (
       filters?.category &&
@@ -54,8 +57,9 @@ export class ProductsService {
     return this.prisma.product.findMany({ where, orderBy: { name: 'asc' } });
   }
 
-  async update(id: string, dto: UpdateProductDto) {
+  async update(userId: string, id: string, dto: UpdateProductDto) {
     try {
+      await this.findOne(userId, id);
       return await this.prisma.product.update({
         where: { id },
         data: dto,
@@ -72,9 +76,9 @@ export class ProductsService {
     }
   }
 
-  async softDelete(id: string) {
-    const product = await this.prisma.product.findUnique({
-      where: { id },
+  async softDelete(userId: string, id: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { id, userId },
     });
 
     // Product has never existed

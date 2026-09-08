@@ -47,15 +47,16 @@ export class QuotesService {
   // Quotes
   // ---------------------------------------------------------------------
 
-  async create(dto: CreateQuoteDto) {
-    const customer = await this.prisma.customer.findUnique({
-      where: { id: dto.customerId },
+  async create(userId: string, dto: CreateQuoteDto) {
+    const customer = await this.prisma.customer.findFirst({
+      where: { id: dto.customerId, userId },
     });
     if (!customer)
       throw new NotFoundException(`Customer ${dto.customerId} not found`);
 
     const quote = await this.prisma.quote.create({
       data: {
+        userId,
         customerId: dto.customerId,
         quoteNumber: dto.quoteNumber ?? this.generateQuoteNumber(),
         label: dto.label ?? PriceLabel.ENDUSER_PRICE,
@@ -70,29 +71,32 @@ export class QuotesService {
     return this.attachSummary(quote);
   }
 
-  findAll() {
+  findAll(userId: string) {
     return this.prisma.quote.findMany({
+      where: { userId },
       include: { customer: true },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async findOne(id: string) {
-    const quote = await this.prisma.quote.findUnique({
-      where: { id },
+  async findOne(userId: string, id: string) {
+    const quote = await this.prisma.quote.findFirst({
+      where: { id, userId },
       include: QUOTE_INCLUDE,
     });
     if (!quote) throw new NotFoundException(`Quote ${id} not found`);
     return this.attachSummary(quote);
   }
 
-  async update(id: string, dto: UpdateQuoteDto) {
-    const existing = await this.prisma.quote.findUnique({ where: { id } });
+  async update(userId: string, id: string, dto: UpdateQuoteDto) {
+    const existing = await this.prisma.quote.findFirst({
+      where: { id, userId },
+    });
     if (!existing) throw new NotFoundException(`Quote ${id} not found`);
 
     if (dto.customerId) {
-      const customer = await this.prisma.customer.findUnique({
-        where: { id: dto.customerId },
+      const customer = await this.prisma.customer.findFirst({
+        where: { id: dto.customerId, userId },
       });
       if (!customer)
         throw new NotFoundException(`Customer ${dto.customerId} not found`);
@@ -116,20 +120,24 @@ export class QuotesService {
     // item (freeform items are left untouched) so the quote reflects the
     // new tier, e.g. switching from "resale price" to "special price".
     if (dto.label && dto.label !== existing.label) {
-      await this.recalculatePricesForLabel(id, dto.label);
+      await this.recalculatePricesForLabel(userId, id, dto.label);
     }
 
-    return this.findOne(id);
+    return this.findOne(userId, id);
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
-    return this.prisma.quote.delete({ where: { id } });
+  async remove(userId: string, id: string) {
+    await this.findOne(userId, id);
+    return this.prisma.quote.delete({ where: { id, userId } });
   }
 
-  private async recalculatePricesForLabel(quoteId: string, label: PriceLabel) {
+  private async recalculatePricesForLabel(
+    userId: string,
+    quoteId: string,
+    label: PriceLabel,
+  ) {
     const items = await this.prisma.quoteItem.findMany({
-      where: { quoteId, productId: { not: null } },
+      where: { quote: { id: quoteId, userId }, productId: { not: null } },
       include: { product: true },
     });
 
@@ -197,10 +205,13 @@ export class QuotesService {
   // Options (e.g. "Battery Option A/B/C/D")
   // ---------------------------------------------------------------------
 
-  async addOption(quoteId: string, dto: CreateOptionDto) {
-    await this.findQuoteOrThrow(quoteId);
+  async addOption(userId: string, quoteId: string, dto: CreateOptionDto) {
+    await this.findQuoteOrThrow(userId, quoteId);
+    if (!dto.quoteSectionId) {
+      throw new BadRequestException('quoteSectionId is required');
+    }
     if (dto.quoteSectionId) {
-      await this.findSectionOrThrow(quoteId, dto.quoteSectionId);
+      await this.findSectionOrThrow(userId, quoteId, dto.quoteSectionId);
     }
     await this.prisma.quoteOption.create({
       data: {
@@ -212,30 +223,39 @@ export class QuotesService {
         sortOrder: dto.sortOrder ?? 0,
       },
     });
-    return this.findOne(quoteId);
+    return this.findOne(userId, quoteId);
   }
 
-  async updateOption(quoteId: string, optionId: string, dto: UpdateOptionDto) {
-    await this.findOptionOrThrow(quoteId, optionId);
+  async updateOption(
+    userId: string,
+    quoteId: string,
+    optionId: string,
+    dto: UpdateOptionDto,
+  ) {
+    await this.findOptionOrThrow(userId, quoteId, optionId);
     if (dto.quoteSectionId) {
-      await this.findSectionOrThrow(quoteId, dto.quoteSectionId);
+      await this.findSectionOrThrow(userId, quoteId, dto.quoteSectionId);
     }
     await this.prisma.quoteOption.update({
       where: { id: optionId },
       data: dto,
     });
-    return this.findOne(quoteId);
+    return this.findOne(userId, quoteId);
   }
 
-  async removeOption(quoteId: string, optionId: string) {
-    await this.findOptionOrThrow(quoteId, optionId);
+  async removeOption(userId: string, quoteId: string, optionId: string) {
+    await this.findOptionOrThrow(userId, quoteId, optionId);
     await this.prisma.quoteOption.delete({ where: { id: optionId } });
-    return this.findOne(quoteId);
+    return this.findOne(userId, quoteId);
   }
 
-  private async findOptionOrThrow(quoteId: string, optionId: string) {
+  private async findOptionOrThrow(
+    userId: string,
+    quoteId: string,
+    optionId: string,
+  ) {
     const option = await this.prisma.quoteOption.findFirst({
-      where: { id: optionId, quoteId },
+      where: { id: optionId, quote: { id: quoteId, userId } },
     });
     if (!option)
       throw new NotFoundException(
@@ -248,17 +268,21 @@ export class QuotesService {
   // Items (typed-in, or picked from the product catalog)
   // ---------------------------------------------------------------------
 
-  async addItem(quoteId: string, dto: CreateItemDto) {
-    const quote = await this.findQuoteOrThrow(quoteId);
+  async addItem(userId: string, quoteId: string, dto: CreateItemDto) {
+    const quote = await this.findQuoteOrThrow(userId, quoteId);
+
+    if (!dto.quoteSectionId) {
+      throw new BadRequestException('quoteSectionId is required');
+    }
 
     if (dto.quoteOptionId) {
-      await this.findOptionOrThrow(quoteId, dto.quoteOptionId);
+      await this.findOptionOrThrow(userId, quoteId, dto.quoteOptionId);
     }
     if (dto.quoteSectionId) {
-      await this.findSectionOrThrow(quoteId, dto.quoteSectionId);
+      await this.findSectionOrThrow(userId, quoteId, dto.quoteSectionId);
     }
 
-    const data = await this.buildItemData(quote, dto);
+    const data = await this.buildItemData(userId, quote, dto);
 
     await this.prisma.quoteItem.create({
       data: {
@@ -269,18 +293,23 @@ export class QuotesService {
       },
     });
 
-    return this.findOne(quoteId);
+    return this.findOne(userId, quoteId);
   }
 
-  async updateItem(quoteId: string, itemId: string, dto: UpdateItemDto) {
-    const quote = await this.findQuoteOrThrow(quoteId);
-    const item = await this.findItemOrThrow(quoteId, itemId);
+  async updateItem(
+    userId: string,
+    quoteId: string,
+    itemId: string,
+    dto: UpdateItemDto,
+  ) {
+    const quote = await this.findQuoteOrThrow(userId, quoteId);
+    const item = await this.findItemOrThrow(userId, quoteId, itemId);
 
     if (dto.quoteOptionId) {
-      await this.findOptionOrThrow(quoteId, dto.quoteOptionId);
+      await this.findOptionOrThrow(userId, quoteId, dto.quoteOptionId);
     }
     if (dto.quoteSectionId) {
-      await this.findSectionOrThrow(quoteId, dto.quoteSectionId);
+      await this.findSectionOrThrow(userId, quoteId, dto.quoteSectionId);
     }
 
     const merged: CreateItemDto = {
@@ -304,7 +333,9 @@ export class QuotesService {
       sortOrder: dto.sortOrder ?? item.sortOrder,
     };
 
-    const data = await this.buildItemData(quote, merged, { isUpdate: true });
+    const data = await this.buildItemData(userId, quote, merged, {
+      isUpdate: true,
+    });
 
     await this.prisma.quoteItem.update({
       where: { id: itemId },
@@ -320,17 +351,17 @@ export class QuotesService {
       },
     });
 
-    return this.findOne(quoteId);
+    return this.findOne(userId, quoteId);
   }
 
-  async removeItem(quoteId: string, itemId: string) {
-    await this.findItemOrThrow(quoteId, itemId);
+  async removeItem(userId: string, quoteId: string, itemId: string) {
+    await this.findItemOrThrow(userId, quoteId, itemId);
     await this.prisma.quoteItem.delete({ where: { id: itemId } });
-    return this.findOne(quoteId);
+    return this.findOne(userId, quoteId);
   }
 
-  async addSection(quoteId: string, dto: CreateSectionDto) {
-    await this.findQuoteOrThrow(quoteId);
+  async addSection(userId: string, quoteId: string, dto: CreateSectionDto) {
+    await this.findQuoteOrThrow(userId, quoteId);
     await this.prisma.quoteSection.create({
       data: {
         quoteId,
@@ -338,41 +369,43 @@ export class QuotesService {
         sortOrder: dto.sortOrder ?? 0,
       },
     });
-    return this.findOne(quoteId);
+    return this.findOne(userId, quoteId);
   }
 
   async updateSection(
+    userId: string,
     quoteId: string,
     sectionId: string,
     dto: UpdateSectionDto,
   ) {
-    await this.findSectionOrThrow(quoteId, sectionId);
+    await this.findSectionOrThrow(userId, quoteId, sectionId);
     await this.prisma.quoteSection.update({
       where: { id: sectionId },
       data: dto,
     });
-    return this.findOne(quoteId);
+    return this.findOne(userId, quoteId);
   }
 
-  async removeSection(quoteId: string, sectionId: string) {
-    await this.findSectionOrThrow(quoteId, sectionId);
-    await this.prisma.$transaction([
-      this.prisma.quoteItem.updateMany({
-        where: { quoteSectionId: sectionId },
-        data: { quoteSectionId: null },
-      }),
-      this.prisma.quoteOption.updateMany({
-        where: { quoteSectionId: sectionId },
-        data: { quoteSectionId: null },
-      }),
-      this.prisma.quoteSection.delete({ where: { id: sectionId } }),
+  async removeSection(userId: string, quoteId: string, sectionId: string) {
+    await this.findSectionOrThrow(userId, quoteId, sectionId);
+    const [itemCount, optionCount] = await Promise.all([
+      this.prisma.quoteItem.count({ where: { quoteSectionId: sectionId } }),
+      this.prisma.quoteOption.count({ where: { quoteSectionId: sectionId } }),
     ]);
-    return this.findOne(quoteId);
+    if (itemCount > 0 || optionCount > 0) {
+      throw new BadRequestException('Only empty sections can be removed');
+    }
+    await this.prisma.quoteSection.delete({ where: { id: sectionId } });
+    return this.findOne(userId, quoteId);
   }
 
-  private async findItemOrThrow(quoteId: string, itemId: string) {
+  private async findItemOrThrow(
+    userId: string,
+    quoteId: string,
+    itemId: string,
+  ) {
     const item = await this.prisma.quoteItem.findFirst({
-      where: { id: itemId, quoteId },
+      where: { id: itemId, quote: { id: quoteId, userId } },
     });
     if (!item)
       throw new NotFoundException(
@@ -381,9 +414,13 @@ export class QuotesService {
     return item;
   }
 
-  private async findSectionOrThrow(quoteId: string, sectionId: string) {
+  private async findSectionOrThrow(
+    userId: string,
+    quoteId: string,
+    sectionId: string,
+  ) {
     const section = await this.prisma.quoteSection.findFirst({
-      where: { id: sectionId, quoteId },
+      where: { id: sectionId, quote: { id: quoteId, userId } },
     });
     if (!section)
       throw new NotFoundException(
@@ -392,9 +429,9 @@ export class QuotesService {
     return section;
   }
 
-  private async findQuoteOrThrow(quoteId: string) {
-    const quote = await this.prisma.quote.findUnique({
-      where: { id: quoteId },
+  private async findQuoteOrThrow(userId: string, quoteId: string) {
+    const quote = await this.prisma.quote.findFirst({
+      where: { id: quoteId, userId },
     });
     if (!quote) throw new NotFoundException(`Quote ${quoteId} not found`);
     return quote;
@@ -406,6 +443,7 @@ export class QuotesService {
    * label) or from the freeform fields the user typed in.
    */
   private async buildItemData(
+    userId: string,
     quote: { label: PriceLabel },
     dto: CreateItemDto,
     opts: { isUpdate?: boolean } = {},
@@ -415,8 +453,8 @@ export class QuotesService {
     const quantity = dto.quantity ?? 1;
 
     if (dto.productId) {
-      const product = await this.prisma.product.findUnique({
-        where: { id: dto.productId },
+      const product = await this.prisma.product.findFirst({
+        where: { id: dto.productId, userId },
       });
       if (!product)
         throw new NotFoundException(`Product ${dto.productId} not found`);
