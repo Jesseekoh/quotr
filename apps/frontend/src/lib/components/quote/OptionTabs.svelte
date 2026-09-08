@@ -2,7 +2,9 @@
 	import type { QuoteOptionWithTotals } from '$lib/api/types';
 	import ItemsTable from './ItemsTable.svelte';
 	import { formatNaira } from '$lib/utils/format';
-	import Button from '../ui/button/button.svelte';
+	import * as Card from '../ui/card/index.js';
+	import * as Tabs from '../ui/tabs/index.js';
+	import { Button } from '../ui/button/index.js';
 
 	let {
 		options,
@@ -32,171 +34,63 @@
 	let activeOption = $derived(options[activeIndex] as QuoteOptionWithTotals | undefined);
 </script>
 
-<section class="card">
-	<div class="section-header">
+<Card.Root>
+	<Card.Header class="flex-row items-start justify-between gap-3 space-y-0">
 		<div>
-			<h2>Options</h2>
-			<p class="hint">
+			<Card.Title>Options</Card.Title>
+			<Card.Description>
 				Alternative packages the customer can choose between, e.g. different battery choices.
+			</Card.Description>
+		</div>
+		<Button type="button" variant="outline" onclick={onAddOption}>Add option</Button>
+	</Card.Header>
+	<Card.Content>
+		{#if options.length === 0}
+			<p class="text-sm text-muted-foreground">
+				No options yet. Items you add outside an option apply to the whole quote.
 			</p>
-		</div>
-		<Button type="button" class="btn-secondary" onclick={onAddOption}>Add option</Button>
-	</div>
+		{:else}
+			<Tabs.Root bind:value={() => `${activeIndex}`, (value) => (activeIndex = Number(value))}>
+				<Tabs.List>
+					{#each options as option, i (option.id)}
+						<Tabs.Trigger value={`${i}`}>{option.name}</Tabs.Trigger>
+					{/each}
+				</Tabs.List>
 
-	{#if options.length === 0}
-		<p class="empty">No options yet. Items you add outside an option apply to the whole quote.</p>
-	{:else}
-		<div class="tabs" role="tablist">
-			{#each options as option, i (option.id)}
-				<Button
-					type="button"
-					role="tab"
-					aria-selected={i === activeIndex}
-					class="tab {i === activeIndex ? 'active' : ''}"
-					onclick={() => (activeIndex = i)}
-				>
-					{option.name}
-				</Button>
-			{/each}
-		</div>
+				{#if activeOption}
+					<div class="flex flex-col gap-3 pt-4">
+						<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+							{#if activeOption.description}
+								<p class="text-sm text-muted-foreground">{activeOption.description}</p>
+							{/if}
+							<div class="flex flex-wrap items-center gap-2">
+								<Button
+									type="button"
+									variant="secondary"
+									onclick={() => onAddItem(activeOption!.id)}
+								>
+									Add item
+								</Button>
+								<Button
+									type="button"
+									variant="destructive"
+									size="sm"
+									onclick={() => onRemoveOption(activeOption!.id)}
+								>
+									Remove option
+								</Button>
+							</div>
+						</div>
 
-		{#if activeOption}
-			<div class="panel">
-				<div class="panel-header">
-					{#if activeOption.description}
-						<p class="option-desc">{activeOption.description}</p>
-					{/if}
-					<div class="panel-actions">
-						<button type="button" class="btn-secondary" onclick={() => onAddItem(activeOption!.id)}>
-							Add item to this option
-						</button>
-						<button
-							type="button"
-							class="link-danger"
-							onclick={() => onRemoveOption(activeOption!.id)}
-						>
-							Remove option
-						</button>
+						<ItemsTable items={activeOption.items} {onQuantityChange} onRemove={onRemoveItem} />
+
+						<div class="flex justify-end border-t pt-3 text-sm">
+							<span class="text-muted-foreground">Option subtotal:&nbsp;</span>
+							<strong>{formatNaira(activeOption.optionItemsTotal)}</strong>
+						</div>
 					</div>
-				</div>
-
-				<ItemsTable items={activeOption.items} {onQuantityChange} onRemove={onRemoveItem} />
-
-				<p class="subtotal">
-					Option subtotal: <strong>{formatNaira(activeOption.optionItemsTotal)}</strong>
-				</p>
-			</div>
+				{/if}
+			</Tabs.Root>
 		{/if}
-	{/if}
-</section>
-
-<style>
-	.card {
-		background: var(--color-surface);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-md);
-		padding: var(--space-4);
-	}
-
-	.section-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		gap: var(--space-3);
-		margin-bottom: var(--space-3);
-	}
-
-	h2 {
-		font-size: var(--text-base);
-		font-weight: 600;
-		margin: 0;
-	}
-
-	.hint {
-		color: var(--color-text-muted);
-		font-size: var(--text-xs);
-		margin: var(--space-1) 0 0;
-	}
-
-	.empty {
-		color: var(--color-text-muted);
-		font-size: var(--text-sm);
-	}
-
-	.tabs {
-		display: flex;
-		gap: var(--space-1);
-		border-bottom: 1px solid var(--color-border);
-		margin-bottom: var(--space-3);
-		flex-wrap: wrap;
-	}
-
-	.tab {
-		background: none;
-		border: none;
-		border-bottom: 2px solid transparent;
-		padding: var(--space-2) var(--space-3);
-		font-size: var(--text-sm);
-		color: var(--color-text-muted);
-		cursor: pointer;
-	}
-
-	.tab.active {
-		color: var(--color-text);
-		border-bottom-color: var(--color-accent);
-		font-weight: 500;
-	}
-
-	.panel-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		gap: var(--space-3);
-		margin-bottom: var(--space-2);
-	}
-
-	.option-desc {
-		color: var(--color-text-muted);
-		font-size: var(--text-sm);
-		margin: 0;
-	}
-
-	.panel-actions {
-		display: flex;
-		align-items: center;
-		gap: var(--space-3);
-		white-space: nowrap;
-	}
-
-	.subtotal {
-		text-align: right;
-		font-size: var(--text-sm);
-		margin: var(--space-3) 0 0;
-	}
-
-	.link-danger {
-		background: none;
-		border: none;
-		color: var(--color-danger);
-		font-size: var(--text-xs);
-		cursor: pointer;
-		padding: 0;
-	}
-
-	.link-danger:hover {
-		text-decoration: underline;
-	}
-
-	.btn-secondary {
-		background: var(--color-surface);
-		border: 1px solid var(--color-border-strong);
-		border-radius: var(--radius-sm);
-		padding: var(--space-2) var(--space-3);
-		font-size: var(--text-sm);
-		cursor: pointer;
-	}
-
-	.btn-secondary:hover {
-		border-color: var(--color-accent);
-	}
-</style>
+	</Card.Content>
+</Card.Root>

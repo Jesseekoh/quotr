@@ -1,6 +1,9 @@
 <script lang="ts">
 	import type { QuoteItem } from '$lib/api/types';
 	import { formatNaira } from '$lib/utils/format';
+	import * as Table from '$lib/components/ui/table/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
 
 	let {
 		items,
@@ -19,122 +22,51 @@
 </script>
 
 {#if items.length === 0}
-	<p class="empty">No items yet.</p>
+	<p class="py-3 text-sm text-muted-foreground">No items yet.</p>
 {:else}
-	<table class="items-table">
-		<thead>
-			<tr>
-				<th>Description</th>
-				<th>Brand</th>
-				<th class="num">Qty</th>
-				<th class="num">Unit price</th>
-				<th class="num">Total</th>
-				<th class="actions"></th>
-			</tr>
-		</thead>
-		<tbody>
-			{#each items as item (item.id)}
-				<tr>
-					<td>
-						<div class="desc">{item.description}</div>
-						{#if item.specification}
-							<div class="spec">{item.specification}</div>
-						{/if}
-					</td>
-					<td>{item.brand ?? '—'}</td>
-					<td class="num">
-						<input
-							type="number"
-							min="1"
-							value={item.quantity}
-							onchange={(e) => handleQtyChange(item, e)}
-							class="qty-input"
-						/>
-					</td>
-					<td class="num">{formatNaira(item.unitPrice)}</td>
-					<td class="num strong">{formatNaira(item.totalPrice)}</td>
-					<td class="actions">
-						<button type="button" class="link-danger" onclick={() => onRemove(item.id)}>
-							Remove
-						</button>
-					</td>
-				</tr>
-			{/each}
-		</tbody>
-	</table>
+	<div class="overflow-x-auto rounded-md border">
+		<Table.Root>
+			<Table.Header>
+				<Table.Row>
+					<Table.Head>Description</Table.Head>
+					<Table.Head>Brand</Table.Head>
+					<Table.Head class="text-right">Qty</Table.Head>
+					<Table.Head class="text-right">Unit price</Table.Head>
+					<Table.Head class="text-right">Total</Table.Head>
+					<Table.Head></Table.Head>
+				</Table.Row>
+			</Table.Header>
+			<Table.Body>
+				{#each items as item (item.id)}
+					<Table.Row>
+						<Table.Cell>
+							<div class="font-medium">{item.description}</div>
+							{#if item.specification}
+								<div class="text-xs text-muted-foreground">{item.specification}</div>
+							{/if}
+						</Table.Cell>
+						<Table.Cell>{item.brand ?? '—'}</Table.Cell>
+						<Table.Cell class="text-right">
+							<Input
+								type="number"
+								min="1"
+								value={item.quantity}
+								onchange={(e) => handleQtyChange(item, e)}
+								class="ml-auto w-20 text-right"
+							/>
+						</Table.Cell>
+						<Table.Cell class="text-right tabular-nums">{formatNaira(item.unitPrice)}</Table.Cell>
+						<Table.Cell class="text-right font-semibold tabular-nums"
+							>{formatNaira(item.totalPrice)}</Table.Cell
+						>
+						<Table.Cell class="text-right">
+							<Button type="button" variant="link" size="sm" onclick={() => onRemove(item.id)}>
+								Remove
+							</Button>
+						</Table.Cell>
+					</Table.Row>
+				{/each}
+			</Table.Body>
+		</Table.Root>
+	</div>
 {/if}
-
-<style>
-	.empty {
-		color: var(--color-text-muted);
-		font-size: var(--text-sm);
-		padding: var(--space-3) 0;
-	}
-
-	.items-table {
-		width: 100%;
-		border-collapse: collapse;
-		font-size: var(--text-sm);
-	}
-
-	.items-table th {
-		text-align: left;
-		font-weight: 500;
-		color: var(--color-text-muted);
-		font-size: var(--text-xs);
-		padding: var(--space-2) var(--space-2);
-		border-bottom: 1px solid var(--color-border);
-	}
-
-	.items-table td {
-		padding: var(--space-2);
-		border-bottom: 1px solid var(--color-border);
-		vertical-align: top;
-	}
-
-	.num {
-		text-align: right;
-		font-variant-numeric: tabular-nums;
-	}
-
-	.strong {
-		font-weight: 600;
-	}
-
-	.desc {
-		font-weight: 500;
-	}
-
-	.spec {
-		color: var(--color-text-muted);
-		font-size: var(--text-xs);
-		margin-top: 2px;
-	}
-
-	.qty-input {
-		width: 3.5rem;
-		text-align: right;
-		padding: var(--space-1) var(--space-2);
-		border: 1px solid var(--color-border-strong);
-		border-radius: var(--radius-sm);
-		font-size: var(--text-sm);
-	}
-
-	.actions {
-		text-align: right;
-		white-space: nowrap;
-	}
-
-	.link-danger {
-		background: none;
-		border: none;
-		color: var(--color-danger);
-		font-size: var(--text-xs);
-		cursor: pointer;
-		padding: 0;
-	}
-
-	.link-danger:hover {
-		text-decoration: underline;
-	}
-</style>

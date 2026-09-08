@@ -2,7 +2,7 @@ import { Decimal } from '@prisma/client/runtime/client';
 import { PriceLabel } from '../generated/prisma/enums.js';
 
 type PricedProduct = {
-  costPrice: Decimal;
+  // costPrice: Decimal;
   discountPrice: Decimal;
   resalePrice: Decimal;
   specialPrice: Decimal;
@@ -18,8 +18,8 @@ export function getProductPriceForLabel(
   label: PriceLabel,
 ): Decimal {
   switch (label) {
-    case PriceLabel.COST_PRICE:
-      return product.costPrice;
+    // case PriceLabel.COST_PRICE:
+    //   return product.costPrice;
     case PriceLabel.DISCOUNT_PRICE:
       return product.discountPrice;
     case PriceLabel.RESALE_PRICE:

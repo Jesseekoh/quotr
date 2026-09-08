@@ -10,11 +10,8 @@ export type ProductCategory =
 	| 'OTHER';
 
 export type PriceLabel =
-	| 'COST_PRICE'
-	| 'DISCOUNT_PRICE'
-	| 'RESALE_PRICE'
-	| 'SPECIAL_PRICE'
-	| 'ENDUSER_PRICE';
+	// | 'COST_PRICE'
+	'DISCOUNT_PRICE' | 'RESALE_PRICE' | 'SPECIAL_PRICE' | 'ENDUSER_PRICE';
 
 export type QuoteStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'REJECTED';
 
@@ -25,6 +22,7 @@ export interface Product {
 	brand: string;
 	category: ProductCategory;
 	specification: string;
+	warranty: string;
 	technicalSpecs: Record<string, unknown> | null;
 	unit: string | null;
 	costPrice: string;

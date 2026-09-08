@@ -102,7 +102,10 @@
 	<title>{quote.quoteNumber} · Quote builder</title>
 </svelte:head>
 
-<div class="mx-auto flex max-w-5xl flex-col gap-6 p-6">
+<div
+	class="@container/main mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-4 md:px-6 md:py-6"
+	aria-busy={loading}
+>
 	{#if errorMessage}
 		<Alert.Root variant="destructive">
 			<IconAlertCircle class="size-4" />
@@ -120,9 +123,11 @@
 	/>
 
 	<Card.Root>
-		<Card.Header class="flex-row items-center justify-between space-y-0">
+		<Card.Header
+			class="flex-col items-start justify-between gap-3 space-y-0 sm:flex-row sm:items-center"
+		>
 			<Card.Title>Items</Card.Title>
-			<Button onclick={() => openAddItem(null)}>Add item</Button>
+			<Button onclick={() => openAddItem(null)} disabled={loading}>Add item</Button>
 		</Card.Header>
 		<Card.Content class="flex flex-col gap-3">
 			<p class="text-xs text-muted-foreground">

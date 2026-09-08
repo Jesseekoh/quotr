@@ -1,7 +1,7 @@
 import type { PriceLabel, Product } from '../api/types';
 
 const FIELD_BY_LABEL: Record<PriceLabel, keyof Product> = {
-	COST_PRICE: 'costPrice',
+	// COST_PRICE: 'costPrice',
 	DISCOUNT_PRICE: 'discountPrice',
 	RESALE_PRICE: 'resalePrice',
 	SPECIAL_PRICE: 'specialPrice',
@@ -15,7 +15,7 @@ export function getProductPriceForLabel(product: Product, label: PriceLabel): nu
 }
 
 export const PRICE_LABEL_OPTIONS: { value: PriceLabel; text: string }[] = [
-	{ value: 'COST_PRICE', text: 'Cost price' },
+	// { value: 'COST_PRICE', text: 'Cost price' },
 	{ value: 'DISCOUNT_PRICE', text: 'Discount price' },
 	{ value: 'RESALE_PRICE', text: 'Resale price' },
 	{ value: 'SPECIAL_PRICE', text: 'Special price' },

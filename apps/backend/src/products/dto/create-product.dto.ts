@@ -1,5 +1,12 @@
-
-import {IsString, IsNotEmpty, IsEnum, IsOptional, IsObject,IsNumber, Min} from 'class-validator'
+import {
+  IsString,
+  IsNotEmpty,
+  IsEnum,
+  IsOptional,
+  IsObject,
+  IsNumber,
+  Min,
+} from 'class-validator';
 import { ProductCategory } from '../../generated/prisma/enums.js';
 export class CreateProductDto {
   @IsString()
@@ -22,6 +29,10 @@ export class CreateProductDto {
   @IsOptional()
   @IsObject()
   technicalSpecs?: Record<string, any>;
+
+  @IsOptional()
+  @IsString()
+  warranty?: string;
 
   @IsOptional()
   @IsString()

@@ -43,6 +43,7 @@
 			brand: fd.get('brand')?.toString() ?? '',
 			category: fd.get('category')?.toString() ?? '',
 			specification: fd.get('specification')?.toString() ?? '',
+			warranty: fd.get('Warranty')?.toString() ?? '',
 			unit: fd.get('unit')?.toString() || undefined,
 			costPrice: Number(fd.get('costPrice') ?? 0),
 			enduserPrice: Number(fd.get('enduserPrice') ?? 0),
@@ -118,6 +119,10 @@
 		/>
 	</div>
 
+	<div class="space-y-2">
+		<Label for="cp-warranty">Warranty</Label>
+		<Input id="cp-warranty" name="warranty" placeholder="e.g. 2 Years" />
+	</div>
 	<div class="space-y-2">
 		<Label class="text-sm font-medium">Pricing (₦)</Label>
 		<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">

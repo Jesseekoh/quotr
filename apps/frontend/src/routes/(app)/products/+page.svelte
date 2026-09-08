@@ -50,7 +50,11 @@
 		if (category) params.set('category', category);
 		if (search) params.set('search', search);
 		const qs = params.toString();
-		goto(resolve(`/products${qs ? `?${qs}` : ''}`), { invalidateAll: true });
+		goto(resolve(`/products${qs ? `?${qs}` : ''}`), {
+			invalidateAll: true,
+			keepFocus: true,
+			noScroll: true
+		});
 	}
 
 	function onCategoryChange(value: string) {

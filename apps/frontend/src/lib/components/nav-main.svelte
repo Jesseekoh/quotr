@@ -1,8 +1,7 @@
 <script lang="ts">
 	import CirclePlusFilledIcon from '@tabler/icons-svelte/icons/circle-plus-filled';
-	import MailIcon from '@tabler/icons-svelte/icons/mail';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
+	// import { Button } from '$lib/components/ui/button/index.js';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import type { Icon } from '@tabler/icons-svelte';
@@ -20,14 +19,14 @@
 					<CirclePlusFilledIcon />
 					<span>Quick Create</span>
 				</Sidebar.MenuButton>
-				<Button
+				<!-- <Button
 					size="icon"
 					class="size-8 group-data-[collapsible=icon]:opacity-0"
 					variant="outline"
 				>
 					<MailIcon />
 					<span class="sr-only">Inbox</span>
-				</Button>
+				</Button> -->
 			</Sidebar.MenuItem>
 		</Sidebar.Menu>
 		<Sidebar.Menu>

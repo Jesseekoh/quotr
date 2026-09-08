@@ -1,4 +1,10 @@
 <script lang="ts">
+	import * as Card from '$lib/components/ui/card/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Textarea } from '$lib/components/ui/textarea/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
+
 	let {
 		loadProfileTotal,
 		loadProfileNotes,
@@ -26,96 +32,42 @@
 	}
 </script>
 
-<section class="card">
-	<div class="card-header">
-		<h2>Load profile</h2>
-		<p class="hint">Total value of all appliances/load the customer wants to power.</p>
-	</div>
+<Card.Root>
+	<Card.Header>
+		<Card.Title>Load profile</Card.Title>
+		<Card.Description
+			>Total value of all appliances/load the customer wants to power.</Card.Description
+		>
+	</Card.Header>
+	<Card.Content>
+		<form class="flex flex-wrap items-end gap-4" onsubmit={save}>
+			<Label class="flex flex-col gap-2">
+				<span>Total load</span>
+				<Input
+					type="number"
+					min="0"
+					step="any"
+					bind:value={total}
+					oninput={markDirty}
+					{disabled}
+					placeholder="e.g. 5580"
+				/>
+			</Label>
 
-	<form class="row" onsubmit={save}>
-		<label class="field">
-			<span>Total load</span>
-			<input
-				type="number"
-				min="0"
-				step="any"
-				bind:value={total}
-				oninput={markDirty}
-				{disabled}
-				placeholder="e.g. 5580"
-			/>
-		</label>
+			<Label class="flex min-w-64 flex-1 flex-col gap-2">
+				<span>Notes</span>
+				<Textarea
+					bind:value={notes}
+					oninput={markDirty}
+					rows={2}
+					{disabled}
+					placeholder="e.g. Fridge, TVs, lights, sockets, pumping machine"
+				></Textarea>
+			</Label>
 
-		<label class="field grow">
-			<span>Notes</span>
-			<textarea
-				bind:value={notes}
-				oninput={markDirty}
-				rows="2"
-				{disabled}
-				placeholder="e.g. Fridge, TVs, lights, sockets, pumping machine"
-			></textarea>
-		</label>
-
-		{#if dirty}
-			<button type="submit" class="btn-primary" {disabled}>Save load profile</button>
-		{/if}
-	</form>
-</section>
-
-<style>
-	.card {
-		background: var(--color-surface);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-md);
-		padding: var(--space-4);
-	}
-
-	.card-header h2 {
-		font-size: var(--text-base);
-		font-weight: 600;
-		margin: 0;
-	}
-
-	.hint {
-		color: var(--color-text-muted);
-		font-size: var(--text-xs);
-		margin: var(--space-1) 0 var(--space-3);
-	}
-
-	.row {
-		display: flex;
-		align-items: flex-end;
-		gap: var(--space-3);
-		flex-wrap: wrap;
-	}
-
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-1);
-		font-size: var(--text-sm);
-	}
-
-	.field.grow {
-		flex: 1;
-		min-width: 16rem;
-	}
-
-	input,
-	textarea {
-		padding: var(--space-2) var(--space-3);
-		border: 1px solid var(--color-border-strong);
-		border-radius: var(--radius-sm);
-		font-size: var(--text-sm);
-		font-family: inherit;
-	}
-
-	input {
-		width: 10rem;
-	}
-
-	textarea {
-		resize: vertical;
-	}
-</style>
+			{#if dirty}
+				<Button type="submit" {disabled}>Save load profile</Button>
+			{/if}
+		</form>
+	</Card.Content>
+</Card.Root>

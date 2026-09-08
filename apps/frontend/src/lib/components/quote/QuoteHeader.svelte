@@ -1,6 +1,10 @@
 <script lang="ts">
 	import type { PriceLabel, QuoteDetail } from '$lib/api/types';
 	import { PRICE_LABEL_OPTIONS } from '$lib/utils/pricing';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import * as Select from '$lib/components/ui/select/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
 
 	let {
 		quote,
@@ -12,115 +16,41 @@
 		disabled?: boolean;
 	} = $props();
 
-	function handleChange(e: Event) {
-		const value = (e.target as HTMLSelectElement).value as PriceLabel;
-		if (value !== quote.label) onLabelChange(value);
+	function handleChange(value: string) {
+		const nextLabel = value as PriceLabel;
+		if (nextLabel !== quote.label) onLabelChange(nextLabel);
 	}
 </script>
 
-<header class="header">
-	<div class="identity">
-		<h1>{quote.quoteNumber}</h1>
-		<p class="customer">
-			{quote.customer.name}
-			{#if quote.customer.phone || quote.customer.email}
-				<span class="muted"> · {quote.customer.phone ?? quote.customer.email}</span>
-			{/if}
-		</p>
-	</div>
-
-	<div class="controls">
-		<label class="field">
-			<span>Price label</span>
-			<select value={quote.label} onchange={handleChange} {disabled}>
-				{#each PRICE_LABEL_OPTIONS as opt (opt.value)}
-					<option value={opt.value}>{opt.text}</option>
-				{/each}
-			</select>
-			<span class="hint">Changing this re-prices every catalog item on the quote.</span>
-		</label>
-
-		<span class="badge badge-{quote.status.toLowerCase()}">{quote.status.toLowerCase()}</span>
-	</div>
-</header>
-
-<style>
-	.header {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: space-between;
-		align-items: flex-start;
-		gap: var(--space-4);
-		padding-bottom: var(--space-4);
-		border-bottom: 1px solid var(--color-border);
-	}
-
-	h1 {
-		font-size: var(--text-xl);
-		font-weight: 600;
-		margin: 0;
-	}
-
-	.customer {
-		margin: var(--space-1) 0 0;
-		color: var(--color-text-muted);
-		font-size: var(--text-sm);
-	}
-
-	.controls {
-		display: flex;
-		align-items: flex-start;
-		gap: var(--space-4);
-	}
-
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-1);
-		font-size: var(--text-sm);
-	}
-
-	.field select {
-		padding: var(--space-2) var(--space-3);
-		border: 1px solid var(--color-border-strong);
-		border-radius: var(--radius-sm);
-		background: var(--color-surface);
-		font-size: var(--text-sm);
-		min-width: 12rem;
-	}
-
-	.hint {
-		color: var(--color-text-muted);
-		font-size: var(--text-xs);
-		max-width: 16rem;
-	}
-
-	.badge {
-		padding: var(--space-1) var(--space-3);
-		border-radius: 999px;
-		font-size: var(--text-xs);
-		text-transform: capitalize;
-		border: 1px solid transparent;
-		align-self: flex-start;
-	}
-
-	.badge-draft {
-		background: var(--color-accent-tint);
-		color: var(--color-accent);
-	}
-
-	.badge-sent {
-		background: #eaf0fb;
-		color: #2c4f8f;
-	}
-
-	.badge-accepted {
-		background: var(--color-success-tint);
-		color: var(--color-success);
-	}
-
-	.badge-rejected {
-		background: var(--color-danger-tint);
-		color: var(--color-danger);
-	}
-</style>
+<Card.Root>
+	<Card.Header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+		<div>
+			<Card.Title class="text-2xl">{quote.quoteNumber}</Card.Title>
+			<Card.Description>
+				{quote.customer.name}
+				{#if quote.customer.phone || quote.customer.email}
+					<span> · {quote.customer.phone ?? quote.customer.email}</span>
+				{/if}
+			</Card.Description>
+		</div>
+		<Badge variant="outline" class="capitalize">{quote.status.toLowerCase()}</Badge>
+	</Card.Header>
+	<Card.Content>
+		<div class="flex max-w-xs flex-col gap-2">
+			<Label for="quote-price-label">Price label</Label>
+			<Select.Root type="single" value={quote.label} onValueChange={handleChange} {disabled}>
+				<Select.Trigger id="quote-price-label" class="w-full">
+					{PRICE_LABEL_OPTIONS.find((option) => option.value === quote.label)?.text}
+				</Select.Trigger>
+				<Select.Content>
+					{#each PRICE_LABEL_OPTIONS as opt (opt.value)}
+						<Select.Item value={opt.value}>{opt.text}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+			<p class="text-xs text-muted-foreground">
+				Changing this re-prices every catalog item on the quote.
+			</p>
+		</div>
+	</Card.Content>
+</Card.Root>
