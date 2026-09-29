@@ -39,12 +39,20 @@
 			<Table.Body>
 				{#each items as item (item.id)}
 					<Table.Row>
-						<Table.Cell>
+						<Table.Cell class="max-w-xs">
+							<div class="font-medium wrap-break-word whitespace-normal">{item.description}</div>
+							{#if item.specification}
+								<div class="text-xs wrap-break-word whitespace-normal text-muted-foreground">
+									{item.specification}
+								</div>
+							{/if}
+						</Table.Cell>
+						<!-- <Table.Cell>
 							<div class="font-medium">{item.description}</div>
 							{#if item.specification}
 								<div class="text-xs text-muted-foreground">{item.specification}</div>
 							{/if}
-						</Table.Cell>
+						</Table.Cell> -->
 						<Table.Cell>{item.brand ?? '—'}</Table.Cell>
 						<Table.Cell class="text-right">
 							<Input

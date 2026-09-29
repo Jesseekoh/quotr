@@ -129,6 +129,24 @@
 	let freeformQuantity = $state(1);
 	let fixedPrice = $state(false);
 
+	function resetForm() {
+		activeTab = 'catalog';
+		search = '';
+		categoryFilter = '__all__';
+		selectedProduct = null;
+		quantity = 1;
+		description = '';
+		brand = '';
+		specification = '';
+		unitPrice = null;
+		freeformQuantity = 1;
+		fixedPrice = false;
+	}
+
+	$effect(() => {
+		if (!open) resetForm();
+	});
+
 	function submitFreeform(e: Event) {
 		e.preventDefault();
 		if (!description.trim() || unitPrice === null) return;

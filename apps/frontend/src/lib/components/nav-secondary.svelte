@@ -1,8 +1,10 @@
 <script lang="ts">
-	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-	import type { WithoutChildren } from "$lib/utils.js";
-	import type { Icon } from "@tabler/icons-svelte";
-	import type { ComponentProps } from "svelte";
+	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import { page } from '$app/state';
+	import type { WithoutChildren } from '$lib/utils.js';
+	import type { Icon } from '@tabler/icons-svelte';
+	import type { ComponentProps } from 'svelte';
+	import { resolve } from '$app/paths';
 
 	let {
 		items,
@@ -17,9 +19,13 @@
 		<Sidebar.Menu>
 			{#each items as item (item.title)}
 				<Sidebar.MenuItem>
-					<Sidebar.MenuButton>
+					<Sidebar.MenuButton
+						class="h-10 p-3 data-[active=true]:bg-primary data-[active=true]:font-semibold data-[active=true]:text-primary-foreground data-[active=true]:hover:bg-primary/90"
+						tooltipContent={item.title}
+						isActive={page.url.pathname === item.url}
+					>
 						{#snippet child({ props })}
-							<a href={item.url} {...props}>
+							<a href={resolve(item.url)} {...props}>
 								<item.icon />
 								<span>{item.title}</span>
 							</a>

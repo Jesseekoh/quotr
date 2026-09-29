@@ -12,7 +12,7 @@
 		<Card.Header>
 			<Card.Description>Quoted Value This Month</Card.Description>
 			<Card.Title class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-				$84,320
+				₦84,320
 			</Card.Title>
 			<Card.Action>
 				<Badge variant="outline">
