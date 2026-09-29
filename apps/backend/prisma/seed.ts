@@ -15,7 +15,7 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
-const userId = 'sCc0KQ88UmHJ70d5dQqnGWRXbHLiaHSL';
+const userId = 'bHFagKAkZR5ZxycW3D5Cb3ZKmolFg3nM';
 
 if (!userId) {
   throw new Error('SEED_USER_ID environment variable is required');
