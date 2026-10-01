@@ -1,8 +1,16 @@
 <script lang="ts">
-	import * as Card from "#lib/components/ui/card/index.js";
-	import { Button } from "#lib/components/ui/button/index.js";
-	import { FieldGroup, Field, FieldLabel, FieldDescription } from "#lib/components/ui/field/index.js";
-	import { Input } from "#lib/components/ui/input/index.js";
+	import * as Card from '#lib/components/ui/card/index.js';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import {
+		FieldGroup,
+		Field,
+		FieldLabel,
+		FieldDescription
+	} from '#lib/components/ui/field/index.js';
+	import { Input } from '#lib/components/ui/input/index.js';
+	import { resolve } from '$app/paths';
+	import { enhance } from '$app/forms';
+	import { toast } from 'svelte-sonner';
 
 	const id = $props.id();
 </script>
@@ -13,18 +21,31 @@
 		<Card.Description>Enter your email below to login to your account</Card.Description>
 	</Card.Header>
 	<Card.Content>
-		<form>
+		<form
+			method="post"
+			use:enhance={() => {
+				return ({ result, update }) => {
+					if (result.type === 'failure') {
+						update();
+						toast.error(result.data?.message);
+					} else {
+						update();
+						toast.success('Logged in successfully');
+					}
+				};
+			}}
+		>
 			<FieldGroup>
 				<Field>
 					<FieldLabel for="email-{id}">Email</FieldLabel>
-					<Input id="email-{id}" type="email" placeholder="m@example.com" required />
+					<Input id="email-{id}" name="email" type="email" placeholder="m@example.com" required />
 				</Field>
 				<Field>
 					<div class="flex items-center">
 						<FieldLabel for="password-{id}">Password</FieldLabel>
 						<a href="##" class="ms-auto inline-block text-sm underline"> Forgot your password? </a>
 					</div>
-					<Input id="password-{id}" type="password" required />
+					<Input id="password-{id}" name="password" type="password" required />
 				</Field>
 				<Field>
 					<Button type="submit" class="w-full">Login</Button>
@@ -38,7 +59,7 @@
 						Login with Google
 					</Button>
 					<FieldDescription class="text-center">
-						Don't have an account? <a href="##">Sign up</a>
+						Don't have an account? <a href={resolve('/(auth)/signup')}>Sign up</a>
 					</FieldDescription>
 				</Field>
 			</FieldGroup>

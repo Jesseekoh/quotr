@@ -1,15 +1,30 @@
 <script lang="ts">
-	import CreditCardIcon from "@tabler/icons-svelte/icons/credit-card";
-	import DotsVerticalIcon from "@tabler/icons-svelte/icons/dots-vertical";
-	import LogoutIcon from "@tabler/icons-svelte/icons/logout";
-	import NotificationIcon from "@tabler/icons-svelte/icons/notification";
-	import UserCircleIcon from "@tabler/icons-svelte/icons/user-circle";
-	import * as Avatar from "#lib/components/ui/avatar/index.js";
-	import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
-	import * as Sidebar from "#lib/components/ui/sidebar/index.js";
+	import CreditCardIcon from '@tabler/icons-svelte/icons/credit-card';
+	import DotsVerticalIcon from '@tabler/icons-svelte/icons/dots-vertical';
+	import LogoutIcon from '@tabler/icons-svelte/icons/logout';
+	import NotificationIcon from '@tabler/icons-svelte/icons/notification';
+	import UserCircleIcon from '@tabler/icons-svelte/icons/user-circle';
+	import * as Avatar from '#lib/components/ui/avatar/index.js';
+	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
+	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
+	import { authClient } from '#lib';
+	import { goto } from '$app/navigation';
+	import { toast } from 'svelte-sonner';
 
 	let { user }: { user: { name: string; email: string; avatar: string } } = $props();
-
+	const logout = async () => {
+		await authClient.signOut({
+			fetchOptions: {
+				onSuccess: () => {
+					toast.success('Logged out successfully');
+					goto('/login', { invalidateAll: true });
+				},
+				onError: (ctx) => {
+					toast.error(ctx.error.message ?? 'Failed to log out');
+				}
+			}
+		});
+	};
 	const sidebar = Sidebar.useSidebar();
 </script>
 
@@ -39,7 +54,7 @@
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content
 				class="w-(--bits-dropdown-menu-anchor-width) min-w-56 rounded-lg"
-				side={sidebar.isMobile ? "bottom" : "right"}
+				side={sidebar.isMobile ? 'bottom' : 'right'}
 				align="end"
 				sideOffset={4}
 			>
@@ -73,7 +88,7 @@
 					</DropdownMenu.Item>
 				</DropdownMenu.Group>
 				<DropdownMenu.Separator />
-				<DropdownMenu.Item>
+				<DropdownMenu.Item onclick={logout}>
 					<LogoutIcon />
 					Log out
 				</DropdownMenu.Item>
