@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "0fd817c9-dd68-4532-a898-0666fa1429a4",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "d798f203-8db0-4316-a401-2921e6fce47e",
+  "prevId": "ba2b3423-0a3e-458e-8cdf-5bca2ead24aa",
   "tables": {
     "customer": {
       "name": "customer",
@@ -106,13 +106,6 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
           "type": "text",
           "primaryKey": false,
           "notNull": true,

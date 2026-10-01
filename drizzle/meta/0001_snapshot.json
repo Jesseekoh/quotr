@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "0fd817c9-dd68-4532-a898-0666fa1429a4",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "ba2b3423-0a3e-458e-8cdf-5bca2ead24aa",
+  "prevId": "0fd817c9-dd68-4532-a898-0666fa1429a4",
   "tables": {
     "customer": {
       "name": "customer",
@@ -111,13 +111,6 @@
           "notNull": true,
           "autoincrement": false
         },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
         "brand": {
           "name": "brand",
           "type": "text",
@@ -196,14 +189,6 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
-        },
-        "is_active": {
-          "name": "is_active",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": true
         },
         "created_at": {
           "name": "created_at",
