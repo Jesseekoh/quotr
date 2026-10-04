@@ -1,4 +1,6 @@
-import type { PriceLabel, Product } from '../api/types';
+// import type { PriceLabel, Product } from '../api/types';
+import type { PriceLabel } from '#lib/server/db/schema.js';
+import type { Product } from '../api/products.remote.js';
 
 const FIELD_BY_LABEL: Record<PriceLabel, keyof Product> = {
 	// COST_PRICE: 'costPrice',
