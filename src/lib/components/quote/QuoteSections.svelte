@@ -14,7 +14,7 @@
 		onRenameOption,
 		onRemoveOption,
 		onRemoveSection,
-		onQuantityChange,
+		onItemChange,
 		onRemoveItem,
 		onMoveItem
 	}: {
@@ -26,7 +26,10 @@
 		onRenameOption: (optionId: string, name: string) => void;
 		onRemoveOption: (optionId: string) => void;
 		onRemoveSection: (sectionId: string) => void;
-		onQuantityChange: (itemId: string, quantity: number) => void;
+		onItemChange: (
+			itemId: string,
+			patch: { description?: string; quantity?: number; unitPrice?: number }
+		) => void;
 		onRemoveItem: (itemId: string) => void;
 		onMoveItem: (itemId: string, sectionId: string | null, optionId: string | null) => void;
 	} = $props();
@@ -52,7 +55,7 @@
 					label: section.name
 				}))
 			]}
-			{onQuantityChange}
+			{onItemChange}
 			onRemove={onRemoveItem}
 			onMove={onMoveItem}
 		/>
@@ -119,7 +122,7 @@
 								label: option.name.trim() || `Option ${String.fromCharCode(65 + optionIndex)}`
 							}))
 						]}
-						{onQuantityChange}
+						{onItemChange}
 						onRemove={onRemoveItem}
 						onMove={onMoveItem}
 					/>
@@ -129,7 +132,7 @@
 						onAddItem={(optionId) => onAddItem(section.id, optionId)}
 						{onRenameOption}
 						{onRemoveOption}
-						{onQuantityChange}
+						{onItemChange}
 						{onRemoveItem}
 						{onMoveItem}
 					/>

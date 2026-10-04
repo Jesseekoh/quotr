@@ -1,6 +1,7 @@
 <script lang="ts">
-	import type { QuoteItem } from '#lib/api/types';
-	import { formatNaira } from '#lib/utils/format';
+	import type { QuoteItem } from '#lib/api/types.js';
+	import { formatNaira } from '#lib/utils/format.js';
+	import { lineTotal } from '#lib/utils/quote-totals.js';
 	import * as Table from '#lib/components/ui/table/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
@@ -8,7 +9,7 @@
 	let {
 		items,
 		destinations = [],
-		onQuantityChange,
+		onItemChange,
 		onRemove,
 		onMove
 	}: {
@@ -19,20 +20,56 @@
 			optionId: string | null;
 			label: string;
 		}[];
-		onQuantityChange: (itemId: string, quantity: number) => void;
+		onItemChange: (
+			itemId: string,
+			patch: { description?: string; quantity?: number; unitPrice?: number }
+		) => void;
 		onRemove: (itemId: string) => void;
 		onMove?: (itemId: string, sectionId: string | null, optionId: string | null) => void;
 	} = $props();
 
-	function handleQtyChange(item: QuoteItem, e: Event) {
-		if (!(e.currentTarget instanceof HTMLInputElement)) return;
-		const value = Number(e.currentTarget.value);
-		if (value > 0 && value !== item.quantity) onQuantityChange(item.id, value);
+	// Borderless until hover/focus so the table stays readable while signalling editability.
+	const cellInput =
+		'h-8 border-transparent bg-transparent px-2 shadow-none hover:border-input focus-visible:border-input';
+
+	function commitDescription(item: QuoteItem, event: Event) {
+		const input = event.currentTarget;
+		if (!(input instanceof HTMLInputElement)) return;
+		const value = input.value.trim();
+		if (value && value !== item.description) onItemChange(item.id, { description: value });
+		else input.value = item.description;
+	}
+
+	function commitQuantity(item: QuoteItem, event: Event) {
+		const input = event.currentTarget;
+		if (!(input instanceof HTMLInputElement)) return;
+		const value = Number(input.value);
+		if (Number.isInteger(value) && value > 0 && value !== item.quantity) {
+			onItemChange(item.id, { quantity: value });
+		} else {
+			input.value = String(item.quantity);
+		}
+	}
+
+	function commitUnitPrice(item: QuoteItem, event: Event) {
+		const input = event.currentTarget;
+		if (!(input instanceof HTMLInputElement)) return;
+		const value = Number(input.value);
+		if (Number.isFinite(value) && value >= 0 && value !== Number(item.unitPrice)) {
+			onItemChange(item.id, { unitPrice: value });
+		} else {
+			input.value = String(item.unitPrice);
+		}
+	}
+
+	function itemSublabel(item: QuoteItem) {
+		return [item.brand, item.specification].filter(Boolean).join(' · ');
 	}
 
 	function handleMove(item: QuoteItem, e: Event) {
-		if (!(e.currentTarget instanceof HTMLSelectElement) || !onMove) return;
-		const destination = destinations.find((item) => item.value === e.currentTarget.value);
+		const select = e.currentTarget;
+		if (!(select instanceof HTMLSelectElement) || !onMove) return;
+		const destination = destinations.find((candidate) => candidate.value === select.value);
 		if (destination) onMove(item.id, destination.sectionId, destination.optionId);
 	}
 </script>
@@ -45,7 +82,6 @@
 			<Table.Header>
 				<Table.Row>
 					<Table.Head>Description</Table.Head>
-					<Table.Head>Brand</Table.Head>
 					<Table.Head class="text-right">Qty</Table.Head>
 					<Table.Head class="text-right">Unit price</Table.Head>
 					<Table.Head class="text-right">Total</Table.Head>
@@ -57,32 +93,44 @@
 				{#each items as item (item.id)}
 					<Table.Row>
 						<Table.Cell class="max-w-xs">
-							<div class="font-medium wrap-break-word whitespace-normal">{item.description}</div>
-							{#if item.specification}
-								<div class="text-xs wrap-break-word whitespace-normal text-muted-foreground">
-									{item.specification}
+							<Input
+								value={item.description}
+								onchange={(e) => commitDescription(item, e)}
+								aria-label="Description"
+								class="{cellInput} font-medium"
+							/>
+							{#if itemSublabel(item)}
+								<div
+									class="mt-0.5 px-2 text-xs wrap-break-word whitespace-normal text-muted-foreground"
+								>
+									{itemSublabel(item)}
 								</div>
 							{/if}
 						</Table.Cell>
-						<!-- <Table.Cell>
-							<div class="font-medium">{item.description}</div>
-							{#if item.specification}
-								<div class="text-xs text-muted-foreground">{item.specification}</div>
-							{/if}
-						</Table.Cell> -->
-						<Table.Cell>{item.brand ?? '—'}</Table.Cell>
 						<Table.Cell class="text-right">
 							<Input
 								type="number"
 								min="1"
+								step="1"
 								value={item.quantity}
-								onchange={(e) => handleQtyChange(item, e)}
-								class="ml-auto w-20 text-right"
+								onchange={(e) => commitQuantity(item, e)}
+								aria-label={`Quantity for ${item.description}`}
+								class="ml-auto w-20 text-right {cellInput}"
 							/>
 						</Table.Cell>
-						<Table.Cell class="text-right tabular-nums">{formatNaira(item.unitPrice)}</Table.Cell>
+						<Table.Cell class="text-right">
+							<Input
+								type="number"
+								min="0"
+								step="1"
+								value={item.unitPrice}
+								onchange={(e) => commitUnitPrice(item, e)}
+								aria-label={`Unit price for ${item.description}`}
+								class="ml-auto w-24 text-right {cellInput}"
+							/>
+						</Table.Cell>
 						<Table.Cell class="text-right font-semibold tabular-nums"
-							>{formatNaira(item.totalPrice)}</Table.Cell
+							>{formatNaira(lineTotal(item))}</Table.Cell
 						>
 						<Table.Cell>
 							{#if onMove}
@@ -117,10 +165,17 @@
 		{#each items as item (item.id)}
 			<article class="rounded-md border bg-card p-4">
 				<div class="flex items-start justify-between gap-3">
-					<div class="min-w-0">
-						<h3 class="font-medium wrap-break-word">{item.description}</h3>
-						{#if item.specification}
-							<p class="mt-1 text-xs wrap-break-word text-muted-foreground">{item.specification}</p>
+					<div class="min-w-0 flex-1">
+						<Input
+							value={item.description}
+							onchange={(e) => commitDescription(item, e)}
+							aria-label="Description"
+							class="{cellInput} font-medium"
+						/>
+						{#if itemSublabel(item)}
+							<p class="mt-0.5 px-2 text-xs wrap-break-word text-muted-foreground">
+								{itemSublabel(item)}
+							</p>
 						{/if}
 					</div>
 					<Button type="button" variant="link" size="sm" onclick={() => onRemove(item.id)}>
@@ -128,28 +183,32 @@
 					</Button>
 				</div>
 
-				<div class="mt-4 grid grid-cols-2 gap-3 text-sm">
-					<div>
-						<div class="text-xs text-muted-foreground">Brand</div>
-						<div>{item.brand ?? '—'}</div>
-					</div>
-					<div>
-						<div class="text-xs text-muted-foreground">Unit price</div>
-						<div class="tabular-nums">{formatNaira(item.unitPrice)}</div>
-					</div>
-					<div>
-						<div class="text-xs text-muted-foreground">Quantity</div>
+				<div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+					<label class="flex flex-col gap-1">
+						<span class="text-xs text-muted-foreground">Quantity</span>
 						<Input
 							type="number"
 							min="1"
+							step="1"
 							value={item.quantity}
-							onchange={(e) => handleQtyChange(item, e)}
-							class="mt-1 w-20"
+							onchange={(e) => commitQuantity(item, e)}
+							class="{cellInput} border-input"
 						/>
-					</div>
-					<div>
-						<div class="text-xs text-muted-foreground">Total</div>
-						<div class="font-semibold tabular-nums">{formatNaira(item.totalPrice)}</div>
+					</label>
+					<label class="flex flex-col gap-1">
+						<span class="text-xs text-muted-foreground">Unit price</span>
+						<Input
+							type="number"
+							min="0"
+							step="1"
+							value={item.unitPrice}
+							onchange={(e) => commitUnitPrice(item, e)}
+							class="{cellInput} border-input"
+						/>
+					</label>
+					<div class="col-span-2 flex items-center justify-between">
+						<span class="text-xs text-muted-foreground">Total</span>
+						<span class="font-semibold tabular-nums">{formatNaira(lineTotal(item))}</span>
 					</div>
 					{#if onMove}
 						<label class="col-span-2 flex flex-col gap-1">

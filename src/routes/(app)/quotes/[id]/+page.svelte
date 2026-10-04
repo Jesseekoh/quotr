@@ -187,9 +187,12 @@
 		});
 	}
 
-	async function handleQuantityChange(itemId: string, quantity: number) {
+	async function handleItemChange(
+		itemId: string,
+		patch: { description?: string; quantity?: number; unitPrice?: number }
+	) {
 		await withLoading(async () => {
-			quote = await updateItem({ id: itemId, quoteId: quote.id, data: { quantity } });
+			quote = await updateItem({ id: itemId, quoteId: quote.id, data: patch });
 		});
 	}
 
@@ -277,7 +280,7 @@
 					onRenameOption={handleRenameOption}
 					onRemoveOption={handleRemoveOption}
 					onRemoveSection={handleRemoveSection}
-					onQuantityChange={handleQuantityChange}
+					onItemChange={handleItemChange}
 					onRemoveItem={handleRemoveItem}
 					onMoveItem={handleMoveItem}
 				/>

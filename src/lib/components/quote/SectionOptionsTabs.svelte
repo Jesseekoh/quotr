@@ -13,7 +13,7 @@
 		onAddItem,
 		onRenameOption,
 		onRemoveOption,
-		onQuantityChange,
+		onItemChange,
 		onRemoveItem,
 		onMoveItem
 	}: {
@@ -22,7 +22,10 @@
 		onAddItem: (optionId: string) => void;
 		onRenameOption: (optionId: string, name: string) => void;
 		onRemoveOption: (optionId: string) => void;
-		onQuantityChange: (itemId: string, quantity: number) => void;
+		onItemChange: (
+			itemId: string,
+			patch: { description?: string; quantity?: number; unitPrice?: number }
+		) => void;
 		onRemoveItem: (itemId: string) => void;
 		onMoveItem: (itemId: string, sectionId: string | null, optionId: string | null) => void;
 	} = $props();
@@ -112,7 +115,7 @@
 					<ItemsTable
 						items={activeOption.items}
 						{destinations}
-						{onQuantityChange}
+						{onItemChange}
 						onRemove={onRemoveItem}
 						onMove={onMoveItem}
 					/>

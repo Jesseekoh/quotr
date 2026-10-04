@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { QuoteOptionWithTotals } from '#lib/api/types';
+	import type { QuoteOptionWithTotals } from '#lib/api/types.js';
 	import ItemsTable from './ItemsTable.svelte';
-	import { formatNaira } from '#lib/utils/format';
+	import { formatNaira } from '#lib/utils/format.js';
 	import * as Card from '../ui/card/index.js';
 	import * as Tabs from '../ui/tabs/index.js';
 	import { Button } from '../ui/button/index.js';
@@ -10,13 +10,16 @@
 		options,
 		onRemoveOption,
 		onAddItem,
-		onQuantityChange,
+		onItemChange,
 		onRemoveItem
 	}: {
 		options: QuoteOptionWithTotals[];
 		onRemoveOption: (optionId: string) => void;
 		onAddItem: (optionId: string) => void;
-		onQuantityChange: (itemId: string, quantity: number) => void;
+		onItemChange: (
+			itemId: string,
+			patch: { description?: string; quantity?: number; unitPrice?: number }
+		) => void;
 		onRemoveItem: (itemId: string) => void;
 	} = $props();
 
@@ -78,7 +81,7 @@
 							</div>
 						</div>
 
-						<ItemsTable items={activeOption.items} {onQuantityChange} onRemove={onRemoveItem} />
+						<ItemsTable items={activeOption.items} {onItemChange} onRemove={onRemoveItem} />
 
 						<div class="flex justify-end border-t pt-3 text-sm">
 							<span class="text-muted-foreground">Option subtotal:&nbsp;</span>
