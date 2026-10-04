@@ -49,6 +49,7 @@
 	let addItemTarget = $state<string | null>(null);
 	let addItemSectionId = $state<string | null>(null);
 	let addOptionSectionId = $state<string | null>(null);
+	let addOptionDefaultName = $state('');
 	let showAddItemModal = $state(false);
 	let showAddOptionModal = $state(false);
 	let showAddSectionModal = $state(false);
@@ -89,8 +90,20 @@
 		showAddItemModal = true;
 	}
 
+	function nextOptionName(section: { name: string; options: { name: string }[] }) {
+		const base = section.name.trim() || 'Option';
+		let max = 0;
+		for (const option of section.options) {
+			const match = option.name.match(/option\s+(\d+)\s*$/i);
+			if (match) max = Math.max(max, Number(match[1]));
+		}
+		return `${base} option ${max + 1}`;
+	}
+
 	function openAddOption(sectionId: string) {
+		const section = sections.find((item) => item.id === sectionId);
 		addOptionSectionId = sectionId;
+		addOptionDefaultName = section ? nextOptionName(section) : '';
 		showAddOptionModal = true;
 	}
 
@@ -311,6 +324,7 @@
 <AddOptionModal
 	bind:open={showAddOptionModal}
 	sectionId={addOptionSectionId ?? ''}
+	defaultName={addOptionDefaultName}
 	onSubmit={handleAddOption}
 />
 

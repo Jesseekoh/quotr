@@ -8,15 +8,24 @@
 	let {
 		open = $bindable(false),
 		sectionId,
+		defaultName = '',
 		onSubmit
 	}: {
 		open: boolean;
 		sectionId: string;
+		defaultName?: string;
 		onSubmit: (payload: { name: string; description?: string; quoteSectionId: string }) => void;
 	} = $props();
 
 	let name = $state('');
 	let description = $state('');
+
+	$effect(() => {
+		if (open) {
+			name = defaultName;
+			description = '';
+		}
+	});
 
 	function submit(e: Event) {
 		e.preventDefault();
@@ -26,8 +35,6 @@
 			description: description.trim() || undefined,
 			quoteSectionId: sectionId
 		});
-		name = '';
-		description = '';
 		open = false;
 	}
 </script>
