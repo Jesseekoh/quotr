@@ -1,4 +1,4 @@
-import { index, numeric, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { sql, relations } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { user } from './auth.schema';
@@ -27,13 +27,15 @@ export const productCategories = [
 export type ProductCategory = (typeof productCategories)[number];
 
 const timestamps = {
-	createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().defaultNow(),
-
+	createdAt: integer('created_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull(),
 	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.$onUpdate(() => /* @__PURE__ */ new Date())
 		.notNull()
-		.defaultNow()
-		.$onUpdate(() => new Date())
 };
+
 // export const product = sqliteTable('product', {
 // 	id: text('id')
 // 		.primaryKey()
