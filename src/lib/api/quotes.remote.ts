@@ -2,7 +2,7 @@ import { command, query } from '$app/server';
 import { requireAuth } from './guard';
 import { db } from '../server/db';
 import * as table from '../server/db/schema';
-import { and, eq, isNotNull, isNull } from 'drizzle-orm';
+import { and, eq, isNotNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { generateQuoteNumber } from '#lib/utils/quotes.js';
 import { error } from '@sveltejs/kit';
@@ -200,14 +200,13 @@ const itemSchema = z.object({
 export const addItem = command(itemSchema, async ({ quoteId, ...payload }) => {
 	const user = requireAuth();
 	const quote = await findQuoteOrThrow(user.id, quoteId);
-	if (!payload.quoteSectionId) error(400, 'quoteSectionId is required');
 	if (payload.quoteOptionId) await findOptionOrThrow(user.id, quoteId, payload.quoteOptionId);
-	await findSectionOrThrow(user.id, quoteId, payload.quoteSectionId);
+	if (payload.quoteSectionId) await findSectionOrThrow(user.id, quoteId, payload.quoteSectionId);
 	const data = await buildItemData(user.id, quote, payload.data);
 	await db.insert(table.quoteItem).values({
 		quoteId,
 		quoteOptionId: payload.quoteOptionId ?? null,
-		quoteSectionId: payload.quoteSectionId,
+		quoteSectionId: payload.quoteSectionId ?? null,
 		...data
 	} as typeof table.quoteItem.$inferInsert);
 	return getQuote(quoteId);
@@ -227,7 +226,8 @@ export const updateItem = command(
 			.set({
 				...data,
 				quoteOptionId: payload.quoteOptionId ?? item.quoteOptionId,
-				quoteSectionId: payload.quoteSectionId ?? item.quoteSectionId
+				quoteSectionId:
+					payload.quoteSectionId !== undefined ? payload.quoteSectionId : item.quoteSectionId
 			})
 			.where(eq(table.quoteItem.id, id));
 		return getQuote(quoteId);
@@ -270,11 +270,6 @@ export const updateSection = command(
 export const removeSection = command(quoteChildIdSchema, async ({ quoteId, id }) => {
 	const user = requireAuth();
 	await findSectionOrThrow(user.id, quoteId, id);
-	const [items, options] = await Promise.all([
-		db.$count(table.quoteItem, eq(table.quoteItem.quoteSectionId, id)),
-		db.$count(table.quoteOption, eq(table.quoteOption.quoteSectionId, id))
-	]);
-	if (items || options) error(400, 'Only empty sections can be removed');
 	await db.delete(table.quoteSection).where(eq(table.quoteSection.id, id));
 	return getQuote(quoteId);
 });

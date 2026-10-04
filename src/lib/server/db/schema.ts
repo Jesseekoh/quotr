@@ -288,7 +288,9 @@ export const quoteItem = sqliteTable(
 
 		sortOrder: integer('sort_order').notNull().default(0),
 
-		quoteSectionId: text('quote_section_id').references(() => quoteSection.id),
+		quoteSectionId: text('quote_section_id').references(() => quoteSection.id, {
+			onDelete: 'set null'
+		}),
 
 		...timestamps
 	},

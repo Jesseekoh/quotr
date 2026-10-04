@@ -56,8 +56,8 @@ export interface QuoteItem {
 	category: ProductCategory | null;
 	quantity: number;
 	unit: string | null;
-	unitPrice: string;
-	totalPrice: string;
+	unitPrice: string | number;
+	totalPrice: string | number;
 	sortOrder: number;
 }
 
@@ -105,14 +105,14 @@ export interface QuoteDetail {
 	customer: Customer;
 	label: PriceLabel;
 	status: QuoteStatus;
-	loadProfileTotal: string | null;
+	loadProfileTotal: string | number | null;
 	loadProfileNotes: string | null;
 	paymentTerms: string | null;
 	notes: string | null;
 	// Items with no quoteOptionId - apply to every option.
 	items: QuoteItem[];
 	options: QuoteOptionWithTotals[];
-	quoteSections: QuoteSection[];
+	sections: QuoteSection[];
 	summary: QuoteSummary;
 	createdAt: string;
 	updatedAt: string;
