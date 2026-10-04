@@ -3,17 +3,25 @@
 	import { PRICE_LABEL_OPTIONS } from '#lib/utils/pricing';
 	import * as Card from '#lib/components/ui/card/index.js';
 	import * as Select from '#lib/components/ui/select/index.js';
+	import * as Switch from '#lib/components/ui/switch/index.js';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 
 	let {
 		quote,
 		onLabelChange,
 		onStatusChange,
+		showPreview,
+		onShowPreviewChange,
+		onOpenPreview,
 		disabled = false
 	}: {
 		quote: QuoteDetail;
 		onLabelChange: (label: PriceLabel) => void;
 		onStatusChange: (status: QuoteStatus) => void;
+		showPreview: boolean;
+		onShowPreviewChange: (show: boolean) => void;
+		onOpenPreview: () => void;
 		disabled?: boolean;
 	} = $props();
 
@@ -46,19 +54,33 @@
 				{/if}
 			</Card.Description>
 		</div>
-		<Select.Root type="single" value={quote.status} onValueChange={handleStatusChange} {disabled}>
-			<Select.Trigger
-				aria-label="Quote status"
-				class="h-7 w-auto rounded-full border px-3 text-xs font-medium capitalize"
-			>
-				{STATUS_OPTIONS.find((option) => option.value === quote.status)?.label}
-			</Select.Trigger>
-			<Select.Content>
-				{#each STATUS_OPTIONS as option (option.value)}
-					<Select.Item value={option.value}>{option.label}</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
+		<div class="flex flex-wrap items-center justify-end gap-3">
+			<div class="flex items-center gap-2">
+				<Switch.Root
+					id="quote-preview-toggle"
+					checked={showPreview}
+					onCheckedChange={onShowPreviewChange}
+					{disabled}
+				/>
+				<Label for="quote-preview-toggle">Show preview</Label>
+			</div>
+			<Button type="button" variant="outline" class="lg:hidden" onclick={onOpenPreview}>
+				Preview
+			</Button>
+			<Select.Root type="single" value={quote.status} onValueChange={handleStatusChange} {disabled}>
+				<Select.Trigger
+					aria-label="Quote status"
+					class="h-7 w-auto rounded-full border px-3 text-xs font-medium capitalize"
+				>
+					{STATUS_OPTIONS.find((option) => option.value === quote.status)?.label}
+				</Select.Trigger>
+				<Select.Content>
+					{#each STATUS_OPTIONS as option (option.value)}
+						<Select.Item value={option.value}>{option.label}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+		</div>
 	</Card.Header>
 	<Card.Content>
 		<div class="flex max-w-xs flex-col gap-2">

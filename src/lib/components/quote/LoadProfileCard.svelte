@@ -9,11 +9,13 @@
 		loadProfileTotal,
 		loadProfileNotes,
 		onSave,
+		onChange,
 		disabled = false
 	}: {
-		loadProfileTotal: string | null;
+		loadProfileTotal: string | number | null;
 		loadProfileNotes: string | null;
 		onSave: (payload: { loadProfileTotal: number | null; loadProfileNotes: string }) => void;
+		onChange?: (payload: { loadProfileTotal: number | null; loadProfileNotes: string }) => void;
 		disabled?: boolean;
 	} = $props();
 
@@ -23,6 +25,7 @@
 
 	function markDirty() {
 		dirty = true;
+		onChange?.({ loadProfileTotal: total, loadProfileNotes: notes });
 	}
 
 	function save(e: Event) {

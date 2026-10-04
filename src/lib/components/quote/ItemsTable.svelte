@@ -7,17 +7,27 @@
 
 	let {
 		items,
+		sections = [],
 		onQuantityChange,
-		onRemove
+		onRemove,
+		onMove
 	}: {
 		items: QuoteItem[];
+		sections?: { id: string; name: string }[];
 		onQuantityChange: (itemId: string, quantity: number) => void;
 		onRemove: (itemId: string) => void;
+		onMove?: (itemId: string, sectionId: string | null) => void;
 	} = $props();
 
 	function handleQtyChange(item: QuoteItem, e: Event) {
-		const value = Number((e.target as HTMLInputElement).value);
+		if (!(e.currentTarget instanceof HTMLInputElement)) return;
+		const value = Number(e.currentTarget.value);
 		if (value > 0 && value !== item.quantity) onQuantityChange(item.id, value);
+	}
+
+	function handleMove(item: QuoteItem, e: Event) {
+		if (!(e.currentTarget instanceof HTMLSelectElement) || !onMove) return;
+		onMove(item.id, e.currentTarget.value || null);
 	}
 </script>
 
@@ -67,6 +77,21 @@
 						<Table.Cell class="text-right font-semibold tabular-nums"
 							>{formatNaira(item.totalPrice)}</Table.Cell
 						>
+						<Table.Cell>
+							{#if onMove}
+								<select
+									class="h-8 max-w-32 rounded-md border bg-background px-2 text-xs"
+									aria-label={`Move ${item.description}`}
+									value={item.quoteSectionId ?? ''}
+									onchange={(e) => handleMove(item, e)}
+								>
+									<option value="">Ungrouped</option>
+									{#each sections as section (section.id)}
+										<option value={section.id}>{section.name}</option>
+									{/each}
+								</select>
+							{/if}
+						</Table.Cell>
 						<Table.Cell class="text-right">
 							<Button type="button" variant="link" size="sm" onclick={() => onRemove(item.id)}>
 								Remove
@@ -116,6 +141,21 @@
 						<div class="text-xs text-muted-foreground">Total</div>
 						<div class="font-semibold tabular-nums">{formatNaira(item.totalPrice)}</div>
 					</div>
+					{#if onMove}
+						<label class="col-span-2 flex flex-col gap-1">
+							<span class="text-xs text-muted-foreground">Move to</span>
+							<select
+								class="h-9 rounded-md border bg-background px-2"
+								value={item.quoteSectionId ?? ''}
+								onchange={(e) => handleMove(item, e)}
+							>
+								<option value="">Ungrouped</option>
+								{#each sections as section (section.id)}
+									<option value={section.id}>{section.name}</option>
+								{/each}
+							</select>
+						</label>
+					{/if}
 				</div>
 			</article>
 		{/each}

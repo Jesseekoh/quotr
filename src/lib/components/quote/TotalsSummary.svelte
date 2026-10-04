@@ -5,10 +5,12 @@
 
 	let {
 		options,
-		summary
+		summary,
+		subtotal
 	}: {
 		options: QuoteOptionWithTotals[];
 		summary: QuoteSummary;
+		subtotal: number;
 	} = $props();
 </script>
 
@@ -19,8 +21,8 @@
 	<Card.Content>
 		<dl class="flex flex-col gap-2 text-sm">
 			<div class="flex justify-between gap-3">
-				<dt class="text-muted-foreground">Common items</dt>
-				<dd class="m-0 tabular-nums">{formatNaira(summary.commonItemsTotal)}</dd>
+				<dt class="text-muted-foreground">Items subtotal</dt>
+				<dd class="m-0 tabular-nums">{formatNaira(subtotal)}</dd>
 			</div>
 			{#each options as option (option.id)}
 				<div class="flex justify-between gap-3">
