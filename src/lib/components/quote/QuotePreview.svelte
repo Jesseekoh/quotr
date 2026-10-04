@@ -1,30 +1,35 @@
 <script lang="ts">
-	import type { QuoteItem, QuoteSection } from '#lib/api/types.js';
+	import type { QuoteDetail, QuoteItem, QuoteSection } from '#lib/api/types.js';
 	import { formatNaira } from '#lib/utils/format.js';
-	import { quoteSubtotal } from '#lib/utils/quote-totals.js';
+	import {
+		baseTotal,
+		MAX_RENDERED_COMBINATIONS,
+		optionTotal,
+		quoteTotals,
+		sectionRange
+	} from '#lib/utils/quote-totals.js';
 	import * as Card from '#lib/components/ui/card/index.js';
+	import { Button } from '#lib/components/ui/button/index.js';
 
-	type PreviewQuote = {
-		quoteNumber: string;
-		customer?: { name: string; email: string | null; address: string | null } | null;
-		label: string;
-		loadProfileTotal: string | number | null;
-		loadProfileNotes: string | null;
-		items?: QuoteItem[];
-		sections?: QuoteSection[];
+	type PreviewQuote = Pick<
+		QuoteDetail,
+		'quoteNumber' | 'label' | 'loadProfileTotal' | 'loadProfileNotes'
+	> & {
+		customer?: QuoteDetail['customer'];
+		items: QuoteItem[];
+		sections: QuoteSection[];
 	};
 
 	let { quote }: { quote: PreviewQuote } = $props();
-
-	const ungroupedItems = $derived(
-		(quote.items ?? []).filter(
-			(item) => item.quoteSectionId === null && item.quoteOptionId === null
-		)
+	let totals = $derived(quoteTotals(quote));
+	let showAll = $state(false);
+	let visibleCombinations = $derived(
+		totals.combinations.slice(0, showAll ? totals.combinations.length : MAX_RENDERED_COMBINATIONS)
 	);
-	const subtotal = $derived(quoteSubtotal(quote));
+	let ungroupedItems = $derived(quote.items.filter((item) => item.quoteSectionId === null));
 
-	function renderItems(items: QuoteItem[]) {
-		return items.filter((item) => item.quoteOptionId === null);
+	function itemLabel(item: QuoteItem) {
+		return `${item.quantity} x ${formatNaira(item.unitPrice)}`;
 	}
 </script>
 
@@ -62,63 +67,106 @@
 		</div>
 
 		{#if ungroupedItems.length > 0}
-			<div>
-				<h3 class="mb-2 font-semibold">Items</h3>
+			<section>
+				<div class="mb-2 flex items-center justify-between gap-3">
+					<h3 class="font-semibold">Ungrouped items</h3>
+					<strong class="tabular-nums"
+						>{formatNaira(
+							totals.fixedTotal -
+								quote.sections.reduce((sum, section) => sum + sectionRange(section).min, 0)
+						)}</strong
+					>
+				</div>
 				<div class="divide-y rounded-md border">
 					{#each ungroupedItems as item (item.id)}
 						<div class="flex items-center justify-between gap-3 p-3 text-sm">
-							<div class="min-w-0">
+							<div>
 								<div class="font-medium">{item.description}</div>
-								<div class="text-xs text-muted-foreground">
-									{item.quantity} × {formatNaira(item.unitPrice)}
-								</div>
+								<div class="text-xs text-muted-foreground">{itemLabel(item)}</div>
 							</div>
-							<div class="shrink-0 font-medium tabular-nums">{formatNaira(item.totalPrice)}</div>
+							<strong class="tabular-nums">{formatNaira(item.totalPrice)}</strong>
 						</div>
 					{/each}
 				</div>
-			</div>
+			</section>
 		{/if}
 
-		{#each quote.sections ?? [] as section, index (section.id)}
+		{#each quote.sections as section, index (section.id)}
 			<section>
-				<h3 class="mb-2 font-semibold">{index + 1}.0 {section.name}</h3>
-				<div class="divide-y rounded-md border">
-					{#each renderItems(section.items) as item (item.id)}
-						<div class="flex items-center justify-between gap-3 p-3 text-sm">
-							<div class="min-w-0">
-								<div class="font-medium">{item.description}</div>
-								<div class="text-xs text-muted-foreground">
-									{item.quantity} × {formatNaira(item.unitPrice)}
-								</div>
-							</div>
-							<div class="shrink-0 font-medium tabular-nums">{formatNaira(item.totalPrice)}</div>
-						</div>
-					{/each}
-					{#if renderItems(section.items).length === 0}
-						<p class="p-3 text-sm text-muted-foreground">No items in this section.</p>
+				<div class="mb-2 flex items-center justify-between gap-3">
+					<h3 class="font-semibold">{index + 1}.0 {section.name}</h3>
+					{#if sectionRange(section).min === sectionRange(section).max}
+						<strong class="tabular-nums">{formatNaira(sectionRange(section).min)}</strong>
+					{:else}
+						<strong class="tabular-nums"
+							>{formatNaira(sectionRange(section).min)} - {formatNaira(
+								sectionRange(section).max
+							)}</strong
+						>
 					{/if}
 				</div>
+				<p class="mb-2 text-xs text-muted-foreground">
+					Includes {formatNaira(baseTotal(section))} in base items.
+				</p>
+				<div class="divide-y rounded-md border">
+					{#each section.items as item (item.id)}
+						<div class="flex items-center justify-between gap-3 p-3 text-sm">
+							<div>
+								<div class="font-medium">{item.description}</div>
+								<div class="text-xs text-muted-foreground">{itemLabel(item)}</div>
+							</div>
+							<strong class="tabular-nums">{formatNaira(item.totalPrice)}</strong>
+						</div>
+					{/each}
+				</div>
+				{#each section.options as option (option.id)}
+					<div class="mt-3 rounded-md border">
+						<div class="flex justify-between gap-3 border-b p-3 text-sm font-medium">
+							<span>{option.name || 'Option'}</span>
+							<strong>{formatNaira(optionTotal(option))}</strong>
+						</div>
+						{#each option.items as item (item.id)}
+							<div class="flex items-center justify-between gap-3 p-3 text-sm">
+								<div>
+									<div class="font-medium">{item.description}</div>
+									<div class="text-xs text-muted-foreground">{itemLabel(item)}</div>
+								</div>
+								<strong class="tabular-nums">{formatNaira(item.totalPrice)}</strong>
+							</div>
+						{/each}
+					</div>
+				{/each}
 			</section>
 		{/each}
 
-		<dl class="rounded-md border p-4 text-sm">
-			<div class="flex justify-between gap-3">
-				<dt class="text-muted-foreground">Subtotal</dt>
-				<dd class="tabular-nums">{formatNaira(subtotal)}</dd>
+		<section class="flex flex-col gap-3 border-t pt-4">
+			<h3 class="font-semibold">Pricing combinations</h3>
+			<div class="divide-y rounded-md border text-sm">
+				{#each visibleCombinations as combination, index (combination.label || `fixed-${index}`)}
+					<div class="flex justify-between gap-3 p-3">
+						<span class="text-muted-foreground">{combination.label || 'Total'}</span>
+						<strong class="tabular-nums">{formatNaira(combination.total)}</strong>
+					</div>
+				{/each}
 			</div>
-			<div class="flex justify-between gap-3">
-				<dt class="text-muted-foreground">Discount</dt>
-				<dd class="tabular-nums">—</dd>
+			{#if totals.combinationCount > MAX_RENDERED_COMBINATIONS}
+				<div class="flex items-center justify-between text-sm text-muted-foreground">
+					<span>{totals.combinationCount} combinations</span>
+					{#if !totals.truncated}<Button
+							type="button"
+							variant="link"
+							size="sm"
+							onclick={() => (showAll = !showAll)}>{showAll ? 'Show fewer' : 'Show all'}</Button
+						>{/if}
+				</div>
+			{/if}
+			<div class="flex justify-between gap-3 border-t pt-3 font-semibold">
+				<span>{totals.overallMin === totals.overallMax ? 'Total' : 'From total to total'}</span>
+				<span class="tabular-nums"
+					>{formatNaira(totals.overallMin)}{#if totals.overallMin !== totals.overallMax}
+						- {formatNaira(totals.overallMax)}{/if}</span
+				>
 			</div>
-			<div class="flex justify-between gap-3">
-				<dt class="text-muted-foreground">Tax</dt>
-				<dd class="tabular-nums">—</dd>
-			</div>
-			<div class="mt-3 flex justify-between gap-3 border-t pt-3 font-semibold">
-				<dt>Total</dt>
-				<dd class="tabular-nums">{formatNaira(subtotal)}</dd>
-			</div>
-		</dl>
+		</section>
 	</Card.Content>
 </Card.Root>

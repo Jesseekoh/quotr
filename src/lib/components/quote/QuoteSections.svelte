@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { QuoteSection } from '#lib/api/types.js';
 	import ItemsTable from './ItemsTable.svelte';
+	import SectionOptionsTabs from './SectionOptionsTabs.svelte';
 	import * as Card from '../ui/card/index.js';
 	import { Button } from '../ui/button/index.js';
 
@@ -10,6 +11,8 @@
 		onAddSection,
 		onAddItem,
 		onAddOption,
+		onRenameOption,
+		onRemoveOption,
 		onRemoveSection,
 		onQuantityChange,
 		onRemoveItem,
@@ -18,12 +21,14 @@
 		ungroupedItems: QuoteSection['items'];
 		sections: QuoteSection[];
 		onAddSection: () => void;
-		onAddItem: (sectionId: string | null) => void;
+		onAddItem: (sectionId: string | null, optionId: string | null) => void;
 		onAddOption: (sectionId: string) => void;
+		onRenameOption: (optionId: string, name: string) => void;
+		onRemoveOption: (optionId: string) => void;
 		onRemoveSection: (sectionId: string) => void;
 		onQuantityChange: (itemId: string, quantity: number) => void;
 		onRemoveItem: (itemId: string) => void;
-		onMoveItem: (itemId: string, sectionId: string | null) => void;
+		onMoveItem: (itemId: string, sectionId: string | null, optionId: string | null) => void;
 	} = $props();
 </script>
 
@@ -33,12 +38,20 @@
 			<Card.Title>Items</Card.Title>
 			<Card.Description>Items that apply without belonging to a numbered section.</Card.Description>
 		</div>
-		<Button type="button" variant="outline" onclick={() => onAddItem(null)}>Add item</Button>
+		<Button type="button" variant="outline" onclick={() => onAddItem(null, null)}>Add item</Button>
 	</Card.Header>
 	<Card.Content>
 		<ItemsTable
 			items={ungroupedItems}
-			sections={sections.map((section) => ({ id: section.id, name: section.name }))}
+			destinations={[
+				{ value: 'ungrouped', sectionId: null, optionId: null, label: 'Ungrouped' },
+				...sections.map((section) => ({
+					value: `section:${section.id}`,
+					sectionId: section.id,
+					optionId: null,
+					label: section.name
+				}))
+			]}
 			{onQuantityChange}
 			onRemove={onRemoveItem}
 			onMove={onMoveItem}
@@ -66,30 +79,17 @@
 						<div>
 							<h3 class="font-semibold">{index + 1}.0 {section.name}</h3>
 							<p class="text-xs text-muted-foreground">
-								{section.items.length} item{section.items.length === 1 ? '' : 's'}
+								{section.items.length} base item{section.items.length === 1 ? '' : 's'}
 							</p>
-							{#if section.options.length > 0}
-								<p class="text-xs text-muted-foreground">
-									Options: {section.options.map((option) => option.name).join(', ')}
-								</p>
-							{/if}
 						</div>
 						<div class="flex flex-wrap gap-2">
 							<Button
 								type="button"
 								variant="secondary"
 								size="sm"
-								onclick={() => onAddItem(section.id)}
+								onclick={() => onAddItem(section.id, null)}
 							>
 								Add item
-							</Button>
-							<Button
-								type="button"
-								variant="secondary"
-								size="sm"
-								onclick={() => onAddOption(section.id)}
-							>
-								Add option
 							</Button>
 							<Button
 								type="button"
@@ -104,10 +104,34 @@
 					</div>
 					<ItemsTable
 						items={section.items}
-						sections={sections.map((item) => ({ id: item.id, name: item.name }))}
+						destinations={[
+							{ value: 'ungrouped', sectionId: null, optionId: null, label: 'Ungrouped' },
+							{
+								value: `section:${section.id}:base`,
+								sectionId: section.id,
+								optionId: null,
+								label: 'Included in all options'
+							},
+							...section.options.map((option, optionIndex) => ({
+								value: `section:${section.id}:option:${option.id}`,
+								sectionId: section.id,
+								optionId: option.id,
+								label: option.name.trim() || `Option ${String.fromCharCode(65 + optionIndex)}`
+							}))
+						]}
 						{onQuantityChange}
 						onRemove={onRemoveItem}
 						onMove={onMoveItem}
+					/>
+					<SectionOptionsTabs
+						{section}
+						onAddOption={() => onAddOption(section.id)}
+						onAddItem={(optionId) => onAddItem(section.id, optionId)}
+						{onRenameOption}
+						{onRemoveOption}
+						{onQuantityChange}
+						{onRemoveItem}
+						{onMoveItem}
 					/>
 				</section>
 			{/each}

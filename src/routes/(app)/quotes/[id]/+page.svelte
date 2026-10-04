@@ -2,7 +2,6 @@
 	import type { PageData } from './$types';
 	import QuoteHeader from '#lib/components/quote/QuoteHeader.svelte';
 	import LoadProfileCard from '#lib/components/quote/LoadProfileCard.svelte';
-	import OptionTabs from '#lib/components/quote/OptionTabs.svelte';
 	import TotalsSummary from '#lib/components/quote/TotalsSummary.svelte';
 	import AddItemModal from '#lib/components/quote/AddItemModal.svelte';
 	import AddOptionModal from '#lib/components/quote/AddOptionModal.svelte';
@@ -12,7 +11,7 @@
 	import { ApiError } from '#lib/api/client.js';
 	import type { PriceLabel, QuoteStatus } from '#lib/api/types.js';
 	import type { CreateItemPayload } from '#lib/api/quotes.js';
-	import { quoteSubtotal } from '#lib/utils/quote-totals.js';
+	import { quoteTotals } from '#lib/utils/quote-totals.js';
 	import { onMount } from 'svelte';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
@@ -27,7 +26,8 @@
 		addItem,
 		updateItem,
 		removeItem,
-		addOption
+		addOption,
+		updateOption
 	} from '#lib/api/quotes.remote.js';
 
 	type PageProps = {
@@ -127,6 +127,20 @@
 		});
 	}
 
+	async function handleRenameOption(optionId: string, name: string) {
+		if (!name.trim()) return;
+		await withLoading(async () => {
+			const option = quote.options.find((item) => item.id === optionId);
+			if (!option || !option.quoteSectionId) return;
+			quote = await updateOption({
+				id: optionId,
+				quoteId: quote.id,
+				name: name.trim(),
+				quoteSectionId: option.quoteSectionId
+			});
+		});
+	}
+
 	async function handleAddSection(payload: { name: string }) {
 		await withLoading(async () => {
 			quote = await addSection({ quoteId: quote.id, ...payload });
@@ -142,7 +156,6 @@
 	}
 
 	async function handleRemoveOption(optionId: string) {
-		if (!confirm('Remove this option and all of its items?')) return;
 		await withLoading(async () => {
 			quote = await removeOption({ id: optionId, quoteId: quote.id });
 		});
@@ -153,8 +166,8 @@
 			quote = await addItem({
 				quoteId: quote.id,
 				data: payload,
-				quoteOptionId: addItemTarget,
-				quoteSectionId: addItemSectionId
+				quoteOptionId: payload.quoteOptionId ?? addItemTarget,
+				quoteSectionId: payload.quoteSectionId ?? addItemSectionId
 			});
 
 			showAddItemModal = false;
@@ -173,12 +186,13 @@
 		});
 	}
 
-	async function handleMoveItem(itemId: string, sectionId: string | null) {
+	async function handleMoveItem(itemId: string, sectionId: string | null, optionId: string | null) {
 		await withLoading(async () => {
 			quote = await updateItem({
 				id: itemId,
 				quoteId: quote.id,
-				quoteSectionId: sectionId
+				quoteSectionId: sectionId,
+				quoteOptionId: optionId
 			});
 		});
 	}
@@ -191,91 +205,86 @@
 	const sections = $derived(
 		(quote.sections ?? []).map((section) => ({
 			...section,
-			items: (quote.items ?? []).filter((item) => item.quoteSectionId === section.id),
-			options: section.options ?? []
+			items: (quote.items ?? []).filter(
+				(item) => item.quoteSectionId === section.id && item.quoteOptionId === null
+			),
+			options: (section.options ?? []).map((option) => ({
+				...option,
+				items: (quote.items ?? []).filter((item) => item.quoteOptionId === option.id)
+			}))
 		}))
 	);
+	const totals = $derived(quoteTotals({ ...quote, sections }));
 </script>
 
 <svelte:head>
 	<title>{quote?.quoteNumber} · Quote builder</title>
 </svelte:head>
 
-<div
-	class="@container/main mx-auto flex w-full flex-col gap-6 px-4 py-4 transition-[max-width] duration-300 md:px-6 md:py-6"
-	// class:max-w-7xl={showPreview}
-	// class:max-w-5xl={!showPreview}
-	aria-busy={loading}
->
-	{#if errorMessage}
-		<Alert.Root variant="destructive">
-			<IconAlertCircle class="size-4" />
-			<Alert.Description>{errorMessage}</Alert.Description>
-		</Alert.Root>
-	{/if}
-
-	<QuoteHeader
-		{quote}
-		onLabelChange={handleLabelChange}
-		onStatusChange={handleStatusChange}
-		{showPreview}
-		onShowPreviewChange={(value) => (showPreview = value)}
-		onOpenPreview={() => (showMobilePreview = true)}
-		disabled={loading}
-	/>
-
-	<div class={showPreview ? 'grid gap-6 lg:grid-cols-2' : ''}>
-		<div class="flex min-w-0 flex-col gap-6">
-			<LoadProfileCard
-				loadProfileTotal={quote.loadProfileTotal}
-				loadProfileNotes={quote.loadProfileNotes}
-				onSave={handleLoadProfileSave}
-				onChange={(payload) => (loadProfileDraft = payload)}
-				disabled={loading}
-			/>
-
-			<QuoteSections
-				{ungroupedItems}
-				{sections}
-				onAddSection={() => (showAddSectionModal = true)}
-				onAddItem={(sectionId) => openAddItem(null, sectionId)}
-				onAddOption={openAddOption}
-				onRemoveSection={handleRemoveSection}
-				onQuantityChange={handleQuantityChange}
-				onRemoveItem={handleRemoveItem}
-				onMoveItem={handleMoveItem}
-			/>
-
-			<OptionTabs
-				options={quote.options}
-				onRemoveOption={handleRemoveOption}
-				onAddItem={(optionId) => {
-					const option = quote.options.find((item) => item.id === optionId);
-					if (option?.quoteSectionId) openAddItem(optionId, option.quoteSectionId);
-				}}
-				onQuantityChange={handleQuantityChange}
-				onRemoveItem={handleRemoveItem}
-			/>
-
-			<TotalsSummary
-				options={quote.options}
-				summary={quote.summary}
-				subtotal={quoteSubtotal({ ...quote, sections })}
-			/>
-		</div>
-
-		{#if showPreview}
-			<QuotePreview
-				quote={{
-					...quote,
-					...loadProfileDraft,
-					items: quote.items ?? [],
-					sections
-				}}
-			/>
+{#key data.quote.id}
+	<div
+		class="@container/main mx-auto flex w-full flex-col gap-6 px-4 py-4 transition-[max-width] duration-300 md:px-6 md:py-6"
+		// class:max-w-7xl={showPreview}
+		// class:max-w-5xl={!showPreview}
+		aria-busy={loading}
+	>
+		{#if errorMessage}
+			<Alert.Root variant="destructive">
+				<IconAlertCircle class="size-4" />
+				<Alert.Description>{errorMessage}</Alert.Description>
+			</Alert.Root>
 		{/if}
+
+		<QuoteHeader
+			{quote}
+			onLabelChange={handleLabelChange}
+			onStatusChange={handleStatusChange}
+			{showPreview}
+			onShowPreviewChange={(value) => (showPreview = value)}
+			onOpenPreview={() => (showMobilePreview = true)}
+			disabled={loading}
+		/>
+
+		<div class={showPreview ? 'grid gap-6 lg:grid-cols-2' : ''}>
+			<div class="flex min-w-0 flex-col gap-6">
+				<LoadProfileCard
+					loadProfileTotal={quote.loadProfileTotal}
+					loadProfileNotes={quote.loadProfileNotes}
+					onSave={handleLoadProfileSave}
+					onChange={(payload) => (loadProfileDraft = payload)}
+					disabled={loading}
+				/>
+
+				<QuoteSections
+					{ungroupedItems}
+					{sections}
+					onAddSection={() => (showAddSectionModal = true)}
+					onAddItem={(sectionId, optionId) => openAddItem(optionId, sectionId)}
+					onAddOption={openAddOption}
+					onRenameOption={handleRenameOption}
+					onRemoveOption={handleRemoveOption}
+					onRemoveSection={handleRemoveSection}
+					onQuantityChange={handleQuantityChange}
+					onRemoveItem={handleRemoveItem}
+					onMoveItem={handleMoveItem}
+				/>
+
+				<TotalsSummary {totals} />
+			</div>
+
+			{#if showPreview}
+				<QuotePreview
+					quote={{
+						...quote,
+						...loadProfileDraft,
+						items: quote.items ?? [],
+						sections
+					}}
+				/>
+			{/if}
+		</div>
 	</div>
-</div>
+{/key}
 
 <Dialog.Root bind:open={showMobilePreview}>
 	<Dialog.Content class="max-h-[90vh] overflow-y-auto sm:max-w-2xl lg:hidden">
@@ -295,6 +304,7 @@
 	bind:open={showAddItemModal}
 	label={quote.label}
 	sectionId={addItemSectionId}
+	optionId={addItemTarget}
 	onSubmit={handleAddItem}
 />
 

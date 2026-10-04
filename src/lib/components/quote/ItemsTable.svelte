@@ -7,16 +7,21 @@
 
 	let {
 		items,
-		sections = [],
+		destinations = [],
 		onQuantityChange,
 		onRemove,
 		onMove
 	}: {
 		items: QuoteItem[];
-		sections?: { id: string; name: string }[];
+		destinations?: {
+			value: string;
+			sectionId: string | null;
+			optionId: string | null;
+			label: string;
+		}[];
 		onQuantityChange: (itemId: string, quantity: number) => void;
 		onRemove: (itemId: string) => void;
-		onMove?: (itemId: string, sectionId: string | null) => void;
+		onMove?: (itemId: string, sectionId: string | null, optionId: string | null) => void;
 	} = $props();
 
 	function handleQtyChange(item: QuoteItem, e: Event) {
@@ -27,7 +32,8 @@
 
 	function handleMove(item: QuoteItem, e: Event) {
 		if (!(e.currentTarget instanceof HTMLSelectElement) || !onMove) return;
-		onMove(item.id, e.currentTarget.value || null);
+		const destination = destinations.find((item) => item.value === e.currentTarget.value);
+		if (destination) onMove(item.id, destination.sectionId, destination.optionId);
 	}
 </script>
 
@@ -43,6 +49,7 @@
 					<Table.Head class="text-right">Qty</Table.Head>
 					<Table.Head class="text-right">Unit price</Table.Head>
 					<Table.Head class="text-right">Total</Table.Head>
+					<Table.Head>Move to</Table.Head>
 					<Table.Head></Table.Head>
 				</Table.Row>
 			</Table.Header>
@@ -82,12 +89,15 @@
 								<select
 									class="h-8 max-w-32 rounded-md border bg-background px-2 text-xs"
 									aria-label={`Move ${item.description}`}
-									value={item.quoteSectionId ?? ''}
+									value={destinations.find(
+										(destination) =>
+											destination.sectionId === item.quoteSectionId &&
+											destination.optionId === item.quoteOptionId
+									)?.value ?? ''}
 									onchange={(e) => handleMove(item, e)}
 								>
-									<option value="">Ungrouped</option>
-									{#each sections as section (section.id)}
-										<option value={section.id}>{section.name}</option>
+									{#each destinations as destination (destination.value)}
+										<option value={destination.value}>{destination.label}</option>
 									{/each}
 								</select>
 							{/if}
@@ -146,12 +156,15 @@
 							<span class="text-xs text-muted-foreground">Move to</span>
 							<select
 								class="h-9 rounded-md border bg-background px-2"
-								value={item.quoteSectionId ?? ''}
+								value={destinations.find(
+									(destination) =>
+										destination.sectionId === item.quoteSectionId &&
+										destination.optionId === item.quoteOptionId
+								)?.value ?? ''}
 								onchange={(e) => handleMove(item, e)}
 							>
-								<option value="">Ungrouped</option>
-								{#each sections as section (section.id)}
-									<option value={section.id}>{section.name}</option>
+								{#each destinations as destination (destination.value)}
+									<option value={destination.value}>{destination.label}</option>
 								{/each}
 							</select>
 						</label>

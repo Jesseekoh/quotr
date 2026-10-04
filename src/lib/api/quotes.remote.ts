@@ -200,7 +200,12 @@ const itemSchema = z.object({
 export const addItem = command(itemSchema, async ({ quoteId, ...payload }) => {
 	const user = requireAuth();
 	const quote = await findQuoteOrThrow(user.id, quoteId);
-	if (payload.quoteOptionId) await findOptionOrThrow(user.id, quoteId, payload.quoteOptionId);
+	if (payload.quoteOptionId) {
+		const option = await findOptionOrThrow(user.id, quoteId, payload.quoteOptionId);
+		if (payload.quoteSectionId !== option.quoteSectionId) {
+			error(400, 'Item option must belong to the selected section');
+		}
+	}
 	if (payload.quoteSectionId) await findSectionOrThrow(user.id, quoteId, payload.quoteSectionId);
 	const data = await buildItemData(user.id, quote, payload.data);
 	await db.insert(table.quoteItem).values({
@@ -218,7 +223,13 @@ export const updateItem = command(
 		const user = requireAuth();
 		const quote = await findQuoteOrThrow(user.id, quoteId);
 		const item = await findItemOrThrow(user.id, quoteId, id);
-		if (payload.quoteOptionId) await findOptionOrThrow(user.id, quoteId, payload.quoteOptionId);
+		if (payload.quoteOptionId) {
+			const option = await findOptionOrThrow(user.id, quoteId, payload.quoteOptionId);
+			const sectionId = payload.quoteSectionId ?? item.quoteSectionId;
+			if (sectionId !== option.quoteSectionId) {
+				error(400, 'Item option must belong to the selected section');
+			}
+		}
 		if (payload.quoteSectionId) await findSectionOrThrow(user.id, quoteId, payload.quoteSectionId);
 		const data = await buildItemData(user.id, quote, { ...item, ...payload });
 		await db

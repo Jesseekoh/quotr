@@ -32,11 +32,13 @@
 		open = $bindable(false),
 		label,
 		sectionId = null,
+		optionId = null,
 		onSubmit
 	}: {
 		open: boolean;
 		label: PriceLabel;
 		sectionId?: string | null;
+		optionId?: string | null;
 		onSubmit: (payload: CreateItemPayload) => void;
 	} = $props();
 
@@ -122,7 +124,12 @@
 	function submitCatalog(e: Event) {
 		e.preventDefault();
 		if (!selectedProduct) return;
-		onSubmit({ productId: selectedProduct.id, quantity, quoteSectionId: sectionId });
+		onSubmit({
+			productId: selectedProduct.id,
+			quantity,
+			quoteSectionId: sectionId,
+			quoteOptionId: optionId
+		});
 		open = false;
 	}
 
@@ -162,7 +169,8 @@
 			specification: specification.trim() || undefined,
 			unitPrice,
 			quantity: fixedPrice ? 1 : freeformQuantity,
-			quoteSectionId: sectionId
+			quoteSectionId: sectionId,
+			quoteOptionId: optionId
 		});
 		open = false;
 	}
