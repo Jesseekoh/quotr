@@ -17,8 +17,8 @@
 		disabled?: boolean;
 	} = $props();
 
-	let total = $state(loadProfileTotal !== null ? Number(loadProfileTotal) : null);
-	let notes = $state(loadProfileNotes ?? '');
+	let total = $derived(loadProfileTotal !== null ? Number(loadProfileTotal) : null);
+	let notes = $derived(loadProfileNotes ?? '');
 	let dirty = $state(false);
 
 	function markDirty() {

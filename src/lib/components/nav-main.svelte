@@ -1,8 +1,7 @@
 <script lang="ts">
-	import CirclePlusFilledIcon from '@tabler/icons-svelte/icons/circle-plus-filled';
-	import MailIcon from '@tabler/icons-svelte/icons/mail';
+	// import CirclePlusFilledIcon from '@tabler/icons-svelte/icons/circle-plus-filled';
+	// import MailIcon from '@tabler/icons-svelte/icons/mail';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
-	import { Button } from '#lib/components/ui/button/index.js';
 	import type { Icon } from '@tabler/icons-svelte';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -11,8 +10,9 @@
 </script>
 
 <Sidebar.Group>
+	<Sidebar.GroupLabel>Navigation</Sidebar.GroupLabel>
 	<Sidebar.GroupContent class="flex flex-col gap-2">
-		<Sidebar.Menu>
+		<!-- <Sidebar.Menu>
 			<Sidebar.MenuItem class="flex items-center gap-2">
 				<Sidebar.MenuButton
 					class="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
@@ -30,7 +30,7 @@
 					<span class="sr-only">Inbox</span>
 				</Button>
 			</Sidebar.MenuItem>
-		</Sidebar.Menu>
+		</Sidebar.Menu> -->
 		<Sidebar.Menu>
 			{#each items as item (item.title)}
 				<Sidebar.MenuItem>

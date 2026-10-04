@@ -20,11 +20,13 @@
 	import { cn } from '#lib/utils.js';
 	import { IconCheck } from '@tabler/icons-svelte';
 
-	import { searchProducts } from '#lib/api/products';
-	import { getProductPriceForLabel, PRODUCT_CATEGORY_OPTIONS } from '#lib/utils/pricing';
-	import { formatNaira, categoryLabel } from '#lib/utils/format';
-	import type { Product, PriceLabel } from '#lib/api/types';
-	import type { CreateItemPayload } from '#lib/api/quotes';
+	// import { searchProducts } from '#lib/api/products';
+	import { getProducts } from '#lib/api/products.remote.js';
+	import { getProductPriceForLabel, PRODUCT_CATEGORY_OPTIONS } from '#lib/utils/pricing.js';
+	import { formatNaira, categoryLabel } from '#lib/utils/format.js';
+	import type { PriceLabel } from '#lib/api/types.js';
+	import type { Product } from '#lib/api/products.remote.js';
+	import type { CreateItemPayload } from '#lib/api/quotes.js';
 
 	let {
 		open = $bindable(false),
@@ -57,10 +59,14 @@
 		searching = true;
 		try {
 			const category = categoryFilter === '__all__' ? undefined : categoryFilter;
-			products = await searchProducts({
+			products = await getProducts({
 				search: search || undefined,
 				category: category as Product['category'] | undefined
 			});
+			// products = await searchProducts({
+			// 	search: search || undefined,
+			// 	category: category as Product['category'] | undefined
+			// });
 		} finally {
 			searching = false;
 		}
@@ -88,7 +94,7 @@
 	const columnHelper = createColumnHelper<typeof features, Product>();
 
 	const columns: ColumnDef<typeof features, Product>[] = columnHelper.columns([
-		columnHelper.accessor('name', { header: 'Product' }),
+		// columnHelper.accessor('name', { header: 'Product' }),
 		columnHelper.accessor('brand', { header: 'Brand' }),
 		columnHelper.accessor('category', {
 			header: 'Category',

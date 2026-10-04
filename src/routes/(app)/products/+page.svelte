@@ -15,7 +15,7 @@
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { features, type DashboardTableFeatures } from '#lib/components/data-table-features.js';
 	import { resolve } from '$app/paths';
-	import type { Product } from './+page.server.js';
+	import type { Product } from '#lib/api/products.remote.js';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import CreateProductForm from '#lib/components/create-product-form.svelte';
 
@@ -51,9 +51,8 @@
 		if (search) params.set('search', search);
 		const qs = params.toString();
 		goto(resolve(`/products${qs ? `?${qs}` : ''}`), {
-			invalidateAll: true,
-			keepFocus: true,
-			noScroll: true
+			reset: false,
+			refreshAll: true
 		});
 	}
 
@@ -87,10 +86,10 @@
 	const columnHelper = createColumnHelper<DashboardTableFeatures, Product>();
 
 	const columns = columnHelper.columns([
-		columnHelper.accessor('name', {
-			header: 'Name',
-			enableHiding: false
-		}),
+		// columnHelper.accessor('name', {
+		// 	header: 'Name',
+		// 	enableHiding: false
+		// }),
 		columnHelper.accessor('brand', {
 			header: 'Brand'
 		}),
@@ -149,7 +148,8 @@
 			<div class="flex flex-col gap-3 px-4 sm:flex-row sm:items-end lg:px-6">
 				<div class="flex flex-col gap-1.5">
 					<Label for="category-filter" class="text-sm font-medium">Category</Label>
-					<Select.Root type="single" bind:value={() => category, onCategoryChange}>
+					<!-- <Select.Root type="single" bind:value={() => category, onCategoryChange}> -->
+					<Select.Root type="single" value={category} onValueChange={onCategoryChange}>
 						<Select.Trigger class="w-50" id="category-filter">
 							{categoryLabel}
 						</Select.Trigger>

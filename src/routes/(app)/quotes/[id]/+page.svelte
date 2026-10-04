@@ -8,20 +8,29 @@
 	import AddOptionModal from '#lib/components/quote/AddOptionModal.svelte';
 	import AddSectionModal from '#lib/components/quote/AddSectionModal.svelte';
 	import QuoteSections from '#lib/components/quote/QuoteSections.svelte';
-	import * as quotesApi from '#lib/api/quotes.js';
 	import { ApiError } from '#lib/api/client.js';
-	import type { PriceLabel, QuoteDetail, QuoteStatus } from '#lib/api/types.js';
+	import type { PriceLabel, QuoteStatus } from '#lib/api/types.js';
 
 	import * as Alert from '#lib/components/ui/alert/index.js';
-	// import AlertCircleIcon from 'lucide-svelte/icons/circle-alert';
 	import { IconAlertCircle } from '@tabler/icons-svelte';
+	import {
+		updateQuote,
+		addSection,
+		removeSection,
+		removeOption,
+		addItem,
+		updateItem,
+		removeItem,
+		addOption
+	} from '#lib/api/quotes.remote.js';
 
-	let { data }: { data: PageData } = $props();
+	type PageProps = {
+		data: PageData;
+	};
+	let { data }: PageProps = $props();
 
-	// Seed local state from the loader; every mutation below just refetches
-	// the quote and replaces this, so the UI never has to reconcile partial
-	// updates by hand.
-	let quote = $state<QuoteDetail>(data.quote);
+	// let quote = $state(data.quote);
+	let quote = $derived(data.quote);
 	let loading = $state(false);
 	let errorMessage = $state<string | null>(null);
 
@@ -57,13 +66,13 @@
 
 	async function handleLabelChange(label: PriceLabel) {
 		await withLoading(async () => {
-			quote = await quotesApi.updateQuote(quote.id, { label });
+			quote = await updateQuote({ id: quote.id, label });
 		});
 	}
 
 	async function handleStatusChange(status: QuoteStatus) {
 		await withLoading(async () => {
-			quote = await quotesApi.updateQuote(quote.id, { status });
+			quote = await updateQuote({ id: quote.id, status });
 		});
 	}
 
@@ -72,7 +81,7 @@
 		loadProfileNotes: string;
 	}) {
 		await withLoading(async () => {
-			quote = await quotesApi.updateQuote(quote.id, payload);
+			quote = await updateQuote({ id: quote.id, ...payload });
 		});
 	}
 
@@ -82,14 +91,14 @@
 		quoteSectionId?: string;
 	}) {
 		await withLoading(async () => {
-			quote = await quotesApi.addOption(quote.id, payload);
+			quote = await addOption({ quoteId: quote.id, ...payload });
 			showAddOptionModal = false;
 		});
 	}
 
 	async function handleAddSection(payload: { name: string }) {
 		await withLoading(async () => {
-			quote = await quotesApi.addSection(quote.id, payload);
+			quote = await addSection({ quoteId: quote.id, ...payload });
 			showAddSectionModal = false;
 		});
 	}
@@ -97,43 +106,45 @@
 	async function handleRemoveSection(sectionId: string) {
 		if (!confirm('Remove this empty section?')) return;
 		await withLoading(async () => {
-			quote = await quotesApi.removeSection(quote.id, sectionId);
+			quote = await removeSection({ id: sectionId, quoteId: quote.id });
 		});
 	}
 
 	async function handleRemoveOption(optionId: string) {
 		if (!confirm('Remove this option and all of its items?')) return;
 		await withLoading(async () => {
-			quote = await quotesApi.removeOption(quote.id, optionId);
+			quote = await removeOption({ id: optionId, quoteId: quote.id });
 		});
 	}
 
 	async function handleAddItem(payload: quotesApi.CreateItemPayload) {
 		await withLoading(async () => {
-			quote = await quotesApi.addItem(quote.id, {
-				...payload,
+			quote = await addItem({
+				quoteId: quote.id,
+				data: payload,
 				quoteOptionId: addItemTarget,
 				quoteSectionId: addItemSectionId
 			});
+
 			showAddItemModal = false;
 		});
 	}
 
 	async function handleQuantityChange(itemId: string, quantity: number) {
 		await withLoading(async () => {
-			quote = await quotesApi.updateItem(quote.id, itemId, { quantity });
+			quote = await updateItem({ id: itemId, quoteId: quote.id, data: { quantity } });
 		});
 	}
 
 	async function handleRemoveItem(itemId: string) {
 		await withLoading(async () => {
-			quote = await quotesApi.removeItem(quote.id, itemId);
+			quote = await removeItem({ id: itemId, quoteId: quote.id });
 		});
 	}
 </script>
 
 <svelte:head>
-	<title>{quote.quoteNumber} · Quote builder</title>
+	<title>{quote?.quoteNumber} · Quote builder</title>
 </svelte:head>
 
 <div
@@ -162,7 +173,7 @@
 	/>
 
 	<QuoteSections
-		sections={quote.quoteSections}
+		sections={quote.sections ?? []}
 		onAddSection={() => (showAddSectionModal = true)}
 		onAddItem={(sectionId) => openAddItem(null, sectionId)}
 		onAddOption={openAddOption}

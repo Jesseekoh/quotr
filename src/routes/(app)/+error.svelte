@@ -1,7 +1,5 @@
 <script lang="ts">
 	import { page } from '$app/state';
-
-	console.log(page);
 </script>
 
 <h1>App error page</h1>

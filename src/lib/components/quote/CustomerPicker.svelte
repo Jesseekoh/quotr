@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { searchCustomers } from '#lib/api/customers';
+	import { searchCustomers } from '#lib/api/customers.remote.js';
 	import type { Customer } from '#lib/api/types';
 	import Button from '../ui/button/button.svelte';
 	import Input from '../ui/input/input.svelte';
@@ -31,6 +31,7 @@
 		searchTimer = setTimeout(async () => {
 			searching = true;
 			try {
+				// results = await searchCustomers(search.trim());
 				results = await searchCustomers(search.trim());
 			} finally {
 				searching = false;
@@ -104,20 +105,26 @@
 			<div class="new-fields">
 				<FieldGroup>
 					<FieldLabel for="name-{id}">Name</FieldLabel>
-					<Input bind:value={newCustomer.name} required placeholder="Customer's full name" />
+					<Input
+						bind:value={newCustomer.name}
+						disabled={mode !== 'new'}
+						required={mode === 'new'}
+						placeholder="Customer's full name"
+					/>
 					<div class="row">
 						<Label class="field">
 							<span>Phone</span>
-							<Input bind:value={newCustomer.phone} placeholder="080…" />
+							<Input bind:value={newCustomer.phone} disabled={mode !== 'new'} placeholder="080…" />
 						</Label>
 						<Label class="field">
 							<span>Email</span>
-							<Input type="email" bind:value={newCustomer.email} />
+							<Input type="email" bind:value={newCustomer.email} disabled={mode !== 'new'} />
 						</Label>
 					</div>
 					<Label class="field">
 						<span>Address</span>
-						<Textarea bind:value={newCustomer.address} rows={2}></Textarea>
+						<Textarea bind:value={newCustomer.address} disabled={mode !== 'new'} rows={2}
+						></Textarea>
 					</Label>
 				</FieldGroup>
 			</div>

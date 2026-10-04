@@ -55,18 +55,6 @@
 		};
 
 		try {
-			// const res = await fetch(`${API_BASE}/products`, {
-			// 	method: 'POST',
-			// 	credentials: 'include',
-			// 	headers: { 'Content-Type': 'application/json' },
-			// 	body: JSON.stringify(payload)
-			// });
-			// if (!res.ok) {
-			// 	const err = await res.json().catch(() => null);
-			// 	toast.error(err?.message ?? 'Failed to create product');
-			// 	return;
-			// }
-
 			await createProduct(payload);
 			toast.success('Product created');
 			form.reset();
@@ -82,10 +70,6 @@
 
 <form class="space-y-4" onsubmit={handleSubmit}>
 	<div class="grid grid-cols-2 gap-4">
-		<div class="space-y-2">
-			<Label for="cp-name">Name</Label>
-			<Input id="cp-name" name="name" placeholder="e.g. HiS-FB54 550W" required />
-		</div>
 		<div class="space-y-2">
 			<Label for="cp-brand">Brand</Label>
 			<Input id="cp-brand" name="brand" placeholder="e.g. Canadian Solar" required />

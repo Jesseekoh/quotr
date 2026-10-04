@@ -1,6 +1,5 @@
 <script lang="ts">
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
-	import { Button } from '#lib/components/ui/button/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
 	import DarkModeToggle from '#lib/components/dark-mode-toggle.svelte';
 </script>
@@ -11,19 +10,9 @@
 	<div class="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
 		<Sidebar.Trigger class="-ms-1" />
 		<Separator orientation="vertical" class="mx-2 data-vertical:h-4 data-vertical:self-auto" />
-		<h1 class="text-base font-medium">Documents</h1>
+		<!-- <h1 class="text-base font-medium">Documents</h1> -->
 		<div class="ms-auto flex items-center gap-2">
 			<DarkModeToggle />
-			<!-- <Button
-				href="https://github.com/shadcn-ui/ui/tree/main/apps/v4/app/(examples)/dashboard"
-				variant="ghost"
-				size="sm"
-				class="hidden sm:flex dark:text-foreground"
-				target="_blank"
-				rel="noopener noreferrer"
-			>
-				GitHub
-			</Button> -->
 		</div>
 	</div>
 </header>
