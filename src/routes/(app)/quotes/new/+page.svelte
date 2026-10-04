@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import CustomerPicker from '#lib/components/quote/CustomerPicker.svelte';
-	import { createCustomer } from '#lib/api/customers.js';
-	import { createQuote } from '#lib/api/quotes.js';
 	import { ApiError } from '#lib/api/client.js';
 	import { PRICE_LABEL_OPTIONS } from '#lib/utils/pricing.js';
 	import type { PriceLabel } from '#lib/api/types.js';
@@ -11,6 +9,8 @@
 	import { Input } from '#lib/components/ui/input/index.js';
 	import Label from '#lib/components/ui/label/label.svelte';
 	import * as Select from '#lib/components/ui/select/index.js';
+	import { createCustomer } from '#lib/api/customers.remote.js';
+	import { createQuote } from '#lib/api/quotes.remote.js';
 
 	let mode = $state<'existing' | 'new'>('existing');
 	let customerId = $state<string | null>(null);
@@ -42,6 +42,12 @@
 			let resolvedCustomerId = customerId;
 
 			if (mode === 'new') {
+				// const customer = await createCustomer({
+				// 	name: newCustomer.name.trim(),
+				// 	phone: newCustomer.phone.trim() || undefined,
+				// 	email: newCustomer.email.trim() || undefined,
+				// 	address: newCustomer.address.trim() || undefined
+				// });
 				const customer = await createCustomer({
 					name: newCustomer.name.trim(),
 					phone: newCustomer.phone.trim() || undefined,

@@ -8,7 +8,6 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const email = formData.get('email') as string;
 		const password = formData.get('password') as string;
-		console.log(email, password);
 		try {
 			await auth.api.signInEmail({
 				body: {
@@ -23,7 +22,6 @@ export const actions: Actions = {
 			}
 			return fail(500, { message: 'Unexpected error' });
 		}
-		console.log('sljdsljfd');
 		return redirect(302, resolve('/(app)/dashboard'));
 	}
 };
