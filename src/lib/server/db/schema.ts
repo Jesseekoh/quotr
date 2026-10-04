@@ -36,49 +36,6 @@ const timestamps = {
 		.notNull()
 };
 
-// export const product = sqliteTable('product', {
-// 	id: text('id')
-// 		.primaryKey()
-// 		.$defaultFn(() => createId()),
-// 	// name: text('name').notNull(),
-// 	brand: text('brand').notNull(),
-// 	specification: text('specification'),
-// 	category: text('category', { enum: PRODUCT_CATEGORIES }).notNull(),
-// 	warranty: text('warranty').default('N/A'),
-// 	unit: text('unit').default('pcs'),
-// 	technicalSpecs: text('technical_specs', { mode: 'json' }).default('{}'),
-
-// 	costPrice: real('const_price').notNull(),
-// 	discountPrice: real('discount_price').notNull(),
-// 	resalePrice: real('resale_price').notNull(),
-// 	specialPrice: real('special_price').notNull(),
-// 	endUserPrice: real('enduser_price').notNull(),
-
-// 	isActive: integer('is_active', { mode: 'boolean' }).default(true),
-
-// 	createdAt: integer('created_at', { mode: 'timestamp_ms' })
-// 		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-// 		.notNull(),
-// 	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
-// 		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-// 		.$onUpdate(() => /* @__PURE__ */ new Date())
-// 		.notNull()
-// });
-
-// ─────────────────────────────────────────────
-// Product
-// ─────────────────────────────────────────────
-
-// export const pricingCategory = sqliteTable('pricing_category', {
-// 	id: text('id')
-// 		.primaryKey()
-// 		.$defaultFn(() => createId()),
-// 	name: text('name').notNull(),
-// 	discountMarkupPercentage: numeric('discount_markup_percentage').notNull(),
-// 	specialMarkupPercentage: numeric('special_markup_percentage').notNull(),
-// 	endUserMarkupPercentage: numeric('end_user_markup_percentage').notNull()
-// });
-
 export const product = sqliteTable(
 	'product',
 	{
